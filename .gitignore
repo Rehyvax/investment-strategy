@@ -1,0 +1,121 @@
+# =============================================================================
+# Investment Strategy Lab — .gitignore
+# =============================================================================
+# PRINCIPLE: nothing in `data/` and no secret ever leaves this machine.
+# If you find yourself reviewing this file because something "should be
+# committed" — STOP. Data is reproducible from JSONL events; secrets aren't.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# Secrets — ABSOLUTE NEVER COMMIT
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+
+# -----------------------------------------------------------------------------
+# Project data — fully ignored
+# Source of truth lives on the local filesystem (and the user's backup).
+# JSONL event log + DuckDB cache + audit bundles must NEVER reach git.
+# -----------------------------------------------------------------------------
+data/
+!data/.gitkeep
+
+
+# -----------------------------------------------------------------------------
+# Per-agent memory (curated free-text notes from sub-agents) — local only
+# -----------------------------------------------------------------------------
+.claude/memory/
+.claude/cache/
+.claude/local/
+
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# uv lockfile is COMMITTED (reproducibility). The cache directory is not.
+.uv-cache/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Type-checker caches
+.mypy_cache/
+.pyright/
+.ruff_cache/
+
+
+# -----------------------------------------------------------------------------
+# Notebooks
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+notebooks/*.ipynb_outputs/
+
+
+# -----------------------------------------------------------------------------
+# Editors & IDEs
+# -----------------------------------------------------------------------------
+.vscode/
+!.vscode/settings.shared.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# -----------------------------------------------------------------------------
+# OS / temp files
+# -----------------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
+
+
+# -----------------------------------------------------------------------------
+# Local / scratch
+# -----------------------------------------------------------------------------
+# Local Claude Code state
+.claude/settings.local.json
+.claude/agents/*.tar.gz
+.claude/agents/*.zip
+
+# Scratch local (scripts operacionales con datos hardcoded)
+scripts/
