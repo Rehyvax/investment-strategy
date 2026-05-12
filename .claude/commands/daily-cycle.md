@@ -49,6 +49,14 @@ For every ticker held in any portfolio + the benchmark constituents (IWDA, VFEM,
 
 Skip tickers that already have today's close persisted (idempotent).
 
+### Step 3.5 — Flight-to-safety market indicators pull
+
+Run `scripts/flight_to_safety_pull.py` to persist today's snapshot of five descriptive macro/risk indicators (GLD, DXY, UST10Y, VIX term structure, TLT/SPY bond-equity ratio) into `data/market_indicators/flight_to_safety/{system_date}.json`.
+
+**Failure handling**: if yfinance fails for any individual indicator, the script marks that indicator `stale: true` and continues with the others. Failure of this step does NOT block the rest of `/daily-cycle` — at most logs a one-line warning. The dashboard layer treats stale indicators visibly.
+
+**Interpretation**: this layer is **descriptive only, never prescriptive**. The Coordinator does NOT translate indicator levels into BUY/SELL recommendations; the indicators are persisted for the user to consult alongside the portfolios. Canonical interpretation notes (e.g., "DXY > 100 historically associates with USD strength / risk-off") are persisted inline in each indicator block as labels, not actions.
+
 ### Step 4 — Snapshot recompute for the 8 portfolios
 
 Invoke `src/portfolios/snapshot.py --all --date today`. Persist `data/snapshots/{portfolio_id}/{YYYY-MM-DD}.json` for each portfolio, then update the symlink/copy `latest.json` for each.
