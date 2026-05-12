@@ -20,10 +20,12 @@ A **3-state Gaussian Hidden Markov Model** trained on weekly observations of thr
 | Feature | Series | Source | Transformation |
 |---|---|---|---|
 | `vix_log` | VIX index | FRED `VIXCLS` (or yfinance `^VIX`) | log(VIX), weekly close (Friday) |
-| `hy_oas` | ICE BofA High Yield OAS | FRED `BAMLH0A0HYM2` | raw (percentage points), weekly close |
+| `baa10y_spread` | Moody's Baa Corporate Bond Yield − 10Y Treasury Yield (spread) | FRED `BAA10Y`. Available 15+ years via API. | raw (percentage points), weekly close |
 | `yc_slope` | 10y - 2y US Treasury | FRED `T10Y2Y` | raw (percentage points), weekly close |
 
-All three are **stationary or near-stationary** in level (HY OAS, yield slope) or in log (VIX). Do not first-difference; the HMM needs the *level* information to characterize regimes.
+All three are **stationary or near-stationary** in level (BAA10Y spread, yield slope) or in log (VIX). Do not first-difference; the HMM needs the *level* information to characterize regimes.
+
+**Note on BAA10Y vs HY OAS**: BAA10Y measures investment-grade Baa credit spread, not high-yield. It is a correlated proxy (~0.85 with HY OAS over the joint period) but with smaller amplitude during stress events (e.g., Lehman 2008: BAA10Y peaked ~6% vs HY OAS ~22%). This substitution was forced by a FRED API limitation: the canonical `BAMLH0A0HYM2` (ICE BofA US HY OAS) series only returns the last ~3 years of data via the public API endpoint, despite the FRED website advertising the full series back to 1996. With BAA10Y the HMM gets 15+ years of training data, satisfying the anti-fragility rule §6.1. The HMM is data-driven and **auto-calibrates** to the effective range of BAA10Y during EM training — no manual threshold adjustment required. Regime states remain conceptually identical (calm/sideways/stressed), only the scale of the feature changes.
 
 ### Training protocol
 
@@ -40,7 +42,7 @@ For the current week (most recent Friday close):
 - `most_likely_state`: argmax of the above
 - `transition_matrix_current`: the trained transition matrix (3×3)
 - `expected_persistence`: 1 / (1 - p_self) for the current most likely state (in weeks)
-- `feature_levels`: current VIX, HY OAS, YC slope values with their dates
+- `feature_levels`: current VIX, BAA10Y spread, YC slope values with their dates
 
 These are the raw model outputs. Other agents may consume them directly if they need the probabilistic detail.
 
@@ -113,7 +115,7 @@ Single JSONL line appended to `data/events/regime_assessments.jsonl`:
   "training_n_obs": 783,
   "feature_levels": {
     "vix": 18.4,
-    "hy_oas": 3.21,
+    "baa10y_spread": 1.85,
     "yc_slope": 0.42,
     "as_of": "2026-05-09"
   },
@@ -151,7 +153,7 @@ Single JSONL line appended to `data/events/regime_assessments.jsonl`:
 
 The Coordinator will trigger you, but the actual HMM lives in `src/macro/`. Expected files:
 
-- `src/macro/features.py` — pulls VIX, HY OAS, YC slope from FRED via `fredapi`, resamples to weekly close, returns clean DataFrame.
+- `src/macro/features.py` — pulls VIX (`VIXCLS`), BAA10Y spread (`BAA10Y`), and YC slope (`T10Y2Y`) from FRED via `fredapi`, resamples to weekly Friday close, returns clean DataFrame.
 - `src/macro/hmm.py` — fits and persists the HMM using `hmmlearn`. Stores trained model parameters in `data/models/macro_hmm_{YYYY-Q}.pkl`.
 - `src/macro/labeling.py` — applies the §3 rules over the probability stream from `data/events/regime_assessments.jsonl`.
 - `src/macro/modulators.py` — maps labels to the §4 modulator dictionary.
@@ -160,7 +162,7 @@ You invoke these via Bash. You never compute the HMM in your head or "estimate" 
 
 ## §9 — Hard rules
 
-- Always use **point-in-time data**. The VIX value for 2024-Q1 must be the value that was actually published in Q1 2024, not a revised value. FRED's VIX series is unrevised (intraday data); HY OAS is revised occasionally — note the publication lag.
+- Always use **point-in-time data**. The VIX value for 2024-Q1 must be the value that was actually published in Q1 2024, not a revised value. FRED's VIX series is unrevised (intraday data); BAA10Y spread is computed from Moody's published yields and is essentially unrevised — note the daily publication lag.
 - If the FRED API call fails, do not fabricate. Append a `regime_assessment_failed` event and exit. The Coordinator handles fallback (use previous week's regime, flagged as stale).
 - The 5-label derived layer is **deterministic given the probability stream**. Two different runs on the same data must produce the same label. If you find yourself "rounding" or "interpreting", you are doing it wrong.
 - You communicate in JSON. The Coordinator handles translation to Spanish for the user. If asked to explain a regime change to the user, keep it factual: which features moved, which state's probability rose, what modulator change it triggers.
@@ -177,7 +179,7 @@ Do NOT store regime calls themselves here. Those live in the JSONL event stream.
 ## §11 — First-run bootstrap
 
 If `data/models/` contains no trained HMM:
-1. Pull 15 years of weekly VIX, HY OAS, YC slope from FRED.
+1. Pull 15 years of weekly VIX (`VIXCLS`), BAA10Y spread (`BAA10Y`), YC slope (`T10Y2Y`) from FRED.
 2. Verify completeness (no gaps > 2 weeks).
 3. Fit HMM with 5 random initializations, pick best LL.
 4. Persist model to `data/models/macro_hmm_{YYYY-Q}.pkl`.

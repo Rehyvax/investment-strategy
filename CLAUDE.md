@@ -18,6 +18,28 @@ The user operates the system; you and Claude Code do the engineering.
 
 1. **Capital preservation before return-seeking.** Asymmetric downside avoidance beats marginal upside capture.
 2. **No look-ahead bias, ever.** Every decision is timestamped and immutable. Once written to `data/events/*.jsonl`, it is never edited — only superseded by a new event.
+
+   **§2.2.1 — Corrections via supersession.** When an event contains a material error (wrong timestamp, wrong numeric field, mis-assigned portfolio_id, etc.), the correction is NEVER an in-place edit of the original JSONL line. The protocol is:
+
+   1. Leave the original event in place, untouched. It records what was written at the time of the error — that history is the audit trail.
+   2. Append a single `system_correction` event to `data/events/runs.jsonl` with the following minimum schema:
+      ```
+      {
+        "event_type": "system_correction",
+        "ts": "<wall-clock now>",
+        "correction_type": "<short tag, e.g. timestamp_realignment, quantity_typo, portfolio_misassignment>",
+        "supersedes_events": [<list of {file, line_or_event_id, original_value, corrected_value, note}>],
+        "reason": "<free-text explanation of why the original was wrong, with enough context for a future auditor>",
+        "lesson_for_memory": "<actionable extract — what pattern to avoid in the future>",
+        "audit_authority": "<who authorized the correction — typically 'user_approved_in_conversation_turn' or a Coordinator decision id>",
+        "executed_by": "<which agent/script executed the correction>"
+      }
+      ```
+   3. Consumers of the event stream (snapshot rebuilders, performance-evaluator, audit-trail command) MUST read the full event log and apply supersessions on replay — i.e., a `system_correction` event overrides the data of the events it supersedes.
+   4. Derived state (snapshots, lot ledger, cache.duckdb) MAY be rewritten in place to reflect the corrected reality — these are regenerable views, not the source of truth. The source of truth is the JSONL stream + its supersession events.
+   5. **Anti-pattern**: split between in-place edits of some files and a supersession event for others. If a correction is required, ALL affected fields must be either (a) left intact + comprehensively documented in the supersession, or (b) regenerated from authoritative supersession data. Mixed-mode corrections are forbidden because they corrupt the audit chain.
+
+   This protocol exists because the same logic that motivates a correction (small detail, easy to fix) also justifies the strictness — the moment we accept in-place edits "just this once", the integrity of the entire audit trail becomes negotiable.
 3. **Every quantitative claim carries its source and timestamp.** If you cannot cite the source and date, you cannot make the claim.
 4. **Falsifiability over conviction.** Every thesis must define what would prove it wrong. No invalidation criteria → no position.
 5. **Process over outcome.** A good decision with a bad outcome ≠ a bad decision. Evaluate process.
@@ -191,7 +213,7 @@ If conflict cannot be cleanly resolved: surface to user explicitly with both sid
 
 ---
 
-## 10. The seven competing paper portfolios
+## 10. The eight competing paper portfolios
 
 All start with **50,000 € cash at T0** (system bootstrap date). All run forward in lockstep with the same market environment.
 
@@ -205,8 +227,22 @@ All start with **50,000 € cash at T0** (system bootstrap date). All run forwar
 | `momentum` | Top decile of 12m-1m total return, equal weight, top 20. Quarterly rebalance. |
 | `quality` | ROIC > WACC sustained 5y + HRP weighting. 15-20 holdings. Semi-annual rebalance. |
 | `benchmark_passive` | 70% iShares MSCI World Acc (IE00B4L5Y983) + 20% Vanguard FTSE EM Acc (IE00B3VVMM84) + 10% iShares € Govt Bond (IE00B4WXJJ64). Annual rebalance. |
+| `robo_advisor` | Indexa Capital aggressive-profile replica: 65% IWDA (IE00B4L5Y983) + 15% VFEM (IE00B3VVMM84) + 10% XESC (IE00BCBJG560, Xtrackers MSCI Europe Small Cap) + 10% EUNH (IE00B3F81R35, iShares Core EUR Aggregate Bond). Annual rebalance (1st Monday of January) with 5pp absolute drift threshold for off-calendar rebalance. **0.40% annual management fee** deducted as continuous daily drag (see §10.1 below). T0 effective: 2026-05-11 (aligned with system T0). |
 
 **Charter immutability rule**: A charter is NEVER modified after T0. If a strategy needs to evolve, a new portfolio (e.g., `quality_v2`) is created. The old one continues running for historical comparison. The slash command `/mandate-change` rejects edits on charters with >30 days of trading history.
+
+### 10.1 — `robo_advisor` management fee mechanism
+
+The `robo_advisor` portfolio simulates the cost of paying Indexa Capital their 0.40% annual management fee on AuM. Implementation rules:
+
+- **Frequency**: deducted on every `/daily-cycle` execution, but only on trading days (252/year convention). Weekend/holiday days have no deduction.
+- **Continuous daily drag**: NAV is multiplied by `factor_daily = (1 - 0.0040 / 252) ≈ 0.99998413` before daily return computation. Compounded over 252 trading days this approximates the 0.40% annual fee.
+- **Order of operations** within `/daily-cycle` for this portfolio: (1) refresh EOD prices → (2) compute pre-fee NAV → (3) apply daily-drag factor → (4) snapshot post-fee NAV.
+- **Persistence**: each deduction appends a `management_fee_deduction` event to `data/events/portfolios/robo_advisor/management_fees.jsonl` with fields: `ts`, `nav_before_eur`, `nav_after_eur`, `fee_amount_eur`, `fee_annual_pct: 0.0040`, `fee_method: "continuous_daily_drag"`, `trading_days_year: 252`.
+- **The fee is "collected", not reinvested**: the deducted EUR is removed from the portfolio (it represents Indexa's revenue, gone). It does NOT accumulate as cash inside `robo_advisor`.
+- **First deduction**: on the first `/daily-cycle` run on or after 2026-05-11 (T0 effective for this portfolio).
+
+**Purpose**: when comparing `robo_advisor` against `benchmark_passive` (same broad asset class exposure, no fee), the divergence over time isolates the value of Indexa's "discipline" (their rebalancing + asset allocation) vs the cost of their fee. Empirically over multi-year windows, this comparison typically demonstrates whether the fee is justified.
 
 ---
 
@@ -274,4 +310,73 @@ If any check fails, Coordinator initiates onboarding dialogue before any analysi
 
 ---
 
-*End of master instructions. Last revised: bootstrap.*
+## 16. Visual Interface Roadmap
+
+### 16.1 — Decision taken (2026-05-11)
+
+After evaluating local dashboard vs hosted web vs mobile app options, the chosen path is:
+
+- **Local dashboard in Streamlit (Python)**
+- **Direct reads from existing JSONL files** (no additional database)
+- **No hosting, no push notifications, no native mobile app**
+- Optional mobile access via Tailscale in the future (if/when needed)
+
+### 16.2 — v1 scope (three screens)
+
+**Screen 1 — Portfolio overview**
+- Visual ranking of the 9 portfolios, ordered by % return since T0
+- Last-24h delta per portfolio
+- Highlight when ranking changes (e.g., a portfolio moves up or down a position)
+- Read sources: `data/snapshots/*/YYYY-MM-DD.json`
+
+**Screen 2 — Catalysts and alerts**
+- List of upcoming events extracted from active theses
+- Visual severity (CRITICAL/HIGH/MEDIUM/LOW)
+- Filter by ticker
+- Read sources: `data/events/theses/*.jsonl` + `data/events/news/YYYY-MM-DD.jsonl`
+
+**Screen 3 — Side-by-side comparator**
+- Selector for 2-3 portfolios
+- Current composition (sectors, top holdings)
+- Metrics: NAV, return since T0, volatility, max drawdown
+- Day-by-day comparison
+- Read sources: `data/snapshots/` + `data/events/portfolios/*/`
+
+### 16.3 — Out of scope for v1 (deliberate)
+
+- Complex historical charts (v1 shows only "delta" values, no time-series curves)
+- Push notifications (not needed for a 12+ month horizon)
+- Native mobile app (complexity-vs-benefit negative for single-operator usage)
+- Complex backend, microservices, or additional database
+- Authentication (local-only, single operator)
+- Data editing via UI — **strictly read-only**; decisions continue to be made in CLI with their full prompts and confirmation flows
+
+### 16.4 — Timeline
+
+| Phase | Period | Action |
+|---|---|---|
+| CLI-only operation | Weeks 1-4 from T0 (May 2026) | Use the CLI exclusively, accumulate operational experience |
+| CLI + feedback collection | Weeks 5-8 (June 2026) | Continue CLI; record what would have been useful to see visually |
+| Dashboard construction | 2 weeks in July 2026 | **Only if decision is confirmed** after the feedback window |
+| Iteration | August-September 2026 | Refine based on real usage |
+
+### 16.5 — Trigger to revisit this decision
+
+Construction begins **only when the user explicitly requests it**. Before starting, the Coordinator validates that priorities still match the ones recorded here. After 2 months of CLI use the user may discover that different functions are needed than those requested on 2026-05-11 — in that case, this section is **superseded** (per §2.2.1 protocol) by a new decision event in the conversation log, and the v1 scope is rewritten before any code is written.
+
+### 16.6 — Confirmed v1 stack
+
+- **Frontend**: Streamlit
+- **Backend**: direct JSONL reads (no additional server, no API layer)
+- **New dependencies to add at build time**: `streamlit` (new); `plotly` and `pandas` already present in `uv.lock`
+- **No new API keys, no new secrets**, no new external services
+
+### 16.7 — Estimated operational cost
+
+- **Construction**: 2 weeks of work (~20-30 hours)
+- **Operation**: zero infrastructure cost (entirely local)
+- **Claude API**: unchanged from CLI usage (analyses continue to flow through Claude Code or the direct API)
+
+---
+
+*End of master instructions. Last revised: 2026-05-11 — added §16 Visual Interface Roadmap.*
