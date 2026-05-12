@@ -57,6 +57,16 @@ Run `scripts/flight_to_safety_pull.py` to persist today's snapshot of five descr
 
 **Interpretation**: this layer is **descriptive only, never prescriptive**. The Coordinator does NOT translate indicator levels into BUY/SELL recommendations; the indicators are persisted for the user to consult alongside the portfolios. Canonical interpretation notes (e.g., "DXY > 100 historically associates with USD strength / risk-off") are persisted inline in each indicator block as labels, not actions.
 
+### Step 3.6 — Sector flows GICS pull (dashboard Layer 1)
+
+Run `scripts/sector_flows_pull.py` to persist today's snapshot of the 11 Select Sector SPDR ETFs (XLE, XLB, XLI, XLY, XLP, XLV, XLF, XLK, XLC, XLU, XLRE) into `data/market_indicators/sector_flows/{system_date}.json`.
+
+**Per-sector metrics**: close USD, YTD / 1M / 3M / 6M / 1Y returns, `above_ma200` flag + distance from MA200, 30-day annualized realized volatility, approximate static S&P 500 weight, best-effort forward P/E via yfinance `.info`.
+
+**Failure handling**: per-ticker errors mark that sector `stale: true` and continue. Failure of this step does NOT block `/daily-cycle`.
+
+**Interpretation**: descriptive only, never prescriptive. The Coordinator does NOT translate sector ranks or breadth metrics into "rotate into X / out of Y" recommendations. The S&P 500 weights are approximate static references (re-validated periodically against the canonical S&P index methodology document), not real-time index weights.
+
 ### Step 4 — Snapshot recompute for the 8 portfolios
 
 Invoke `src/portfolios/snapshot.py --all --date today`. Persist `data/snapshots/{portfolio_id}/{YYYY-MM-DD}.json` for each portfolio, then update the symlink/copy `latest.json` for each.
