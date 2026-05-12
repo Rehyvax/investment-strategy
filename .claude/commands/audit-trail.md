@@ -71,7 +71,12 @@ For each data source cited by each agent, verify the source's date is ≤ the de
 
 Also verify the prompts in the bundle don't reference data later than the bundle's claimed `point_in_time_date`.
 
-## Output to user (Spanish, factual, no editorializing)
+## Output to user (Spanish, factual, no editorializing — per CLAUDE.md §13)
+
+Lead with the final coordinator decision verdict surfaced at the top of the
+reconstruction (one-line bottom line), then the chronological timeline below
+as supporting evidence. For an audit-trail, the "conclusion" is the decision
+that was ultimately taken; the timeline is the reasoning trail.
 
 ```
 🔍 Reconstrucción de decisión: $1

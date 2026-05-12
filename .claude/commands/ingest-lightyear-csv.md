@@ -70,7 +70,9 @@ If reconciliation passes:
 
 Trigger `src/portfolios/snapshot.py --portfolio real` to update `data/snapshots/real/latest.json`.
 
-## Output to user (Spanish)
+## Output to user (Spanish — per CLAUDE.md §13)
+
+Lead with the bottom line (ingest status + NAV reconciliation result) at the top, then the per-line counts and lot-ledger impact below. If 2-month-rule warnings exist, surface their count in the headline and itemise after.
 
 ```
 ✅ Ingesta completada.

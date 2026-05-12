@@ -106,9 +106,9 @@ Append `daily_cycle_complete` event to `data/events/runs.jsonl` with:
 - Counts of news events, price points refreshed, snapshots produced
 - Pointer to any alerts surfaced
 
-## Output to user (Spanish)
+## Output to user (Spanish — per CLAUDE.md §13)
 
-Always end with a compact cycle summary. Example for a typical Tuesday with no alerts:
+Lead with the bottom-line cycle outcome (`✅ Ciclo completado` / `⏸ Ciclo pausado por alerta`) at the top, then itemise the per-step counts (news, prices, snapshots, weekly/monthly/quarterly cadences fired) below as supporting detail. Any CRITICAL/HIGH alert that paused the cycle is surfaced INLINE at the moment of detection (per Step 2), not buffered to the end. Always end with a compact cycle summary. Example for a typical Tuesday with no alerts:
 
 ```
 ✅ Ciclo diario completado (2026-05-12, martes).
