@@ -506,18 +506,26 @@ def generate_portfolios_chart_data(as_of: date) -> dict[str, Any]:
 # Block D — Recommendations (driven by theses + override annotations)
 # ----------------------------------------------------------------------
 def _load_thesis_chain(ticker: str) -> tuple[dict | None, dict | None]:
-    """Returns (latest_thesis, override_annotation) for the ticker."""
+    """Returns (latest_thesis, override_annotation) for the ticker.
+    Returns (None, None) when a `thesis_closed_position` event has been
+    recorded — closed positions are terminal for recommendation purposes
+    even though the historical events remain in the audit trail."""
     path = THESES_DIR / f"{ticker}.jsonl"
     if not path.exists():
         return None, None
     latest_thesis: dict | None = None
     override: dict | None = None
+    closed = False
     for event in _iter_jsonl(path):
         et = event.get("event_type")
         if et == "thesis":
             latest_thesis = event
         elif et == "thesis_user_override_annotation":
             override = event
+        elif et == "thesis_closed_position":
+            closed = True
+    if closed:
+        return None, None
     return latest_thesis, override
 
 
@@ -1103,11 +1111,18 @@ def generate_upcoming_events_by_asset(
             t = p.get("ticker")
             if isinstance(t, str):
                 tickers.add(t)
-    # Also include any ticker with a thesis even if not currently held
-    # (e.g. AXON during a wind-down).
+    # Also include any ticker with an OPEN thesis even if not currently
+    # held (wind-down case). Skip tickers whose thesis has been marked
+    # `thesis_closed_position` — these no longer require monitoring.
     if THESES_DIR.exists():
         for f in THESES_DIR.glob("*.jsonl"):
-            tickers.add(f.stem)
+            ticker = f.stem
+            has_close = any(
+                ev.get("event_type") == "thesis_closed_position"
+                for ev in _iter_jsonl(f)
+            )
+            if not has_close:
+                tickers.add(ticker)
     for ticker in sorted(tickers):
         events = _get_upcoming_events_for_asset(ticker, as_of)
         if events:

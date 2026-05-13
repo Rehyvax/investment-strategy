@@ -26,13 +26,15 @@ class TestThesisReader:
         # At least one of MELI / AXON / MSFT should be present.
         assert any(t in assets for t in ("MELI", "AXON", "MSFT"))
 
-    def test_axon_authoritative_is_override(self):
+    def test_axon_authoritative_is_none_after_close(self):
+        """Post 2026-05-14 rotation, AXON has a thesis_closed_position
+        event that supersedes the still-recorded user_override_active.
+        Closed status is terminal — authoritative version must be None
+        even though the override annotation is still in the JSONL."""
         from services.thesis_reader import ThesisReader
 
         thesis = ThesisReader().get_authoritative_version("AXON")
-        assert thesis is not None
-        assert thesis.get("event_type") == "thesis_user_override_annotation"
-        assert thesis.get("user_override_active") is True
+        assert thesis is None
 
     def test_meli_falsifier_includes_halfway(self):
         from services.thesis_reader import ThesisReader
@@ -63,14 +65,23 @@ class TestPositionReader:
         assets = PositionReader().list_assets("real")
         assert len(assets) >= 15
 
-    def test_axon_position_has_weight_pct(self):
+    def test_held_position_has_weight_pct(self):
+        """The reader must compute weight_pct on the fly when the
+        snapshot omits it. AXON exited on 2026-05-14, so we exercise the
+        check on a still-held position (MSFT, present in the post-rotation
+        snapshot)."""
         from services.position_reader import PositionReader
 
-        p = PositionReader().get_position("AXON", "real")
+        p = PositionReader().get_position("MSFT", "real")
         assert p is not None
-        # `weight_pct` is computed by the reader when the rebuilder
-        # snapshot omits it.
         assert p["weight_pct"] > 0
+
+    def test_closed_position_returns_none(self):
+        """Sanity: a position no longer in the latest snapshot returns
+        None. AXON is the canonical example after the 2026-05-14 close."""
+        from services.position_reader import PositionReader
+
+        assert PositionReader().get_position("AXON", "real") is None
 
 
 # ----------------------------------------------------------------------

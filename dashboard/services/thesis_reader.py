@@ -46,10 +46,20 @@ class ThesisReader:
         return out
 
     def get_authoritative_version(self, asset: str) -> dict[str, Any] | None:
-        """Override annotation wins if active. Otherwise the latest
-        thesis event. Returns None when no thesis exists."""
+        """Returns the authoritative event for the asset, with three states:
+        (1) None — no thesis ever, OR position closed via
+            `thesis_closed_position` (terminal). Closed positions deactivate
+            their override annotation regardless of `user_override_active`.
+        (2) `thesis_user_override_annotation` — user override is active and
+            the position is still held.
+        (3) Latest `thesis` / `thesis_review` event."""
         versions = self.get_all_versions(asset)
         if not versions:
+            return None
+        # Closed-position event is terminal — supersedes everything.
+        if any(
+            v.get("event_type") == "thesis_closed_position" for v in versions
+        ):
             return None
         override = next(
             (
@@ -70,6 +80,27 @@ class ThesisReader:
         if thesis_events:
             return thesis_events[-1]
         return versions[-1]
+
+    def get_closed_assets(self) -> list[str]:
+        """Returns sorted list of tickers whose latest history contains a
+        `thesis_closed_position` event. Used to filter the dashboard's
+        recommendation feed and to mark theses as no-longer-authoritative
+        in audit trails."""
+        out: list[str] = []
+        for asset in self.list_assets():
+            versions = self.get_all_versions(asset)
+            if any(
+                v.get("event_type") == "thesis_closed_position"
+                for v in versions
+            ):
+                out.append(asset)
+        return sorted(out)
+
+    def is_closed(self, asset: str) -> bool:
+        """True if the asset has a `thesis_closed_position` event in its
+        history. Closed status is terminal: a re-open requires a fresh
+        thesis event."""
+        return asset in self.get_closed_assets()
 
     def get_latest_thesis_only(self, asset: str) -> dict[str, Any] | None:
         """Returns the latest `thesis` (or `thesis_review`) event,

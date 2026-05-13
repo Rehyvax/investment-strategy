@@ -65,11 +65,23 @@ class TestPortfolioReal:
         assert 47000 < data["nav_total_eur"] < 49000
         assert data["positions_count"] >= 15
 
-    def test_health_green_no_false_breach(self):
-        """Rebuilder snapshots lack sector/country metadata; the health
-        check must not fire false-positive breaches because of it."""
-        data = gen.generate_portfolio_real(date(2026, 5, 14))
+    def test_health_green_no_false_breach_on_metadata_less_snapshot(self):
+        """Rebuilder snapshots (e.g. 2026-05-12) lack sector/country
+        metadata; the health check must not fire false-positive breaches
+        because of it. Anchored at 2026-05-12 to use the original
+        SnapshotRebuilder output, since the post-rotation 2026-05-14
+        snapshot DOES carry that metadata and produces legitimate red
+        breaches (86.4% US country, 45.5% IT sector)."""
+        data = gen.generate_portfolio_real(date(2026, 5, 12))
         assert data["health_status"] in ("green", "yellow")
+
+    def test_health_red_when_metadata_reveals_real_breach(self):
+        """Post-rotation 2026-05-14 snapshot carries sector_at_purchase
+        and country_at_purchase per position. The portfolio is genuinely
+        concentrated in US Information Technology — health must fire."""
+        data = gen.generate_portfolio_real(date(2026, 5, 14))
+        assert data["health_status"] == "red"
+        assert "sector" in data["health_summary"] or "country" in data["health_summary"]
 
     def test_drawdown_negative_or_zero(self):
         data = gen.generate_portfolio_real(date(2026, 5, 14))
@@ -102,13 +114,14 @@ class TestRecommendations:
         recs = gen.generate_recommendations(date(2026, 5, 14))
         assert len(recs) <= 3
 
-    def test_axon_override_active(self):
+    def test_axon_closed_excluded_from_recommendations(self):
+        """AXON exited the portfolio on 2026-05-14 (thesis_closed_position
+        event). Even though the override annotation remains in the audit
+        trail, recommendations must NOT surface AXON anymore — closed is
+        terminal."""
         recs = gen.generate_recommendations(date(2026, 5, 14))
         axon = [r for r in recs if r["asset"] == "AXON"]
-        assert len(axon) == 1
-        assert axon[0]["type"] == "HOLD_OVERRIDE"
-        assert axon[0]["priority"] == "high"
-        assert axon[0]["color"] == "orange"
+        assert len(axon) == 0
 
     def test_meli_watch_with_active_falsifier(self):
         """MELI thesis has a dict falsifier_status_audit with 1 falsifier

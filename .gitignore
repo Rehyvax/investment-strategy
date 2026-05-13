@@ -126,6 +126,7 @@ scripts/*
 !scripts/generate_cerebro_state.py
 !scripts/llm_narratives.py
 !scripts/llm_chat.py
+!scripts/trade_ingest.py
 !scripts/run_daily_cerebro.bat
 !scripts/install_daily_task.ps1
 
