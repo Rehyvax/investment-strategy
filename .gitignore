@@ -130,6 +130,7 @@ scripts/*
 !scripts/news_scanner.py
 !scripts/technical_analyst.py
 !scripts/fundamentals_analyst.py
+!scripts/mercado_ai.py
 !scripts/run_daily_cerebro.bat
 !scripts/run_daily_news_scanner.bat
 !scripts/run_weekly_debates.py

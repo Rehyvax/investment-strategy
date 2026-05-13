@@ -1,0 +1,291 @@
+"""Portfolio-level reader for Pantalla 2 (Cartera).
+
+Builds on top of `position_reader.PositionReader` to expose:
+- KPIs (NAV, cash, P&L unrealized + realized YTD, position count)
+- Concentrations (single-name / sector / country) vs CLAUDE.md caps
+- Realized P&L year-to-date over data/events/portfolios/real/trades.jsonl
+- Enriched positions list with debate verdict + thesis status badges
+
+Pure of Streamlit dependencies — the page consumes the dict outputs.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+from pathlib import Path
+from typing import Any
+
+LAB_ROOT = Path(__file__).resolve().parents[2]
+SNAPSHOTS_DIR = LAB_ROOT / "data" / "snapshots"
+TRADES_FP = LAB_ROOT / "data" / "events" / "portfolios" / "real" / "trades.jsonl"
+CEREBRO_STATE_FP = LAB_ROOT / "dashboard" / "data" / "cerebro_state.json"
+
+# CLAUDE.md §9 + risk-concentration agent caps (immutable)
+CAP_SINGLE_NAME_PCT = 12.0
+CAP_SECTOR_PCT = 35.0
+CAP_COUNTRY_PCT = 80.0
+WARN_THRESHOLD = 0.85  # 85% of cap is "halfway"
+
+
+class PortfolioReader:
+    def __init__(
+        self,
+        snapshots_dir: Path | None = None,
+        trades_fp: Path | None = None,
+        cerebro_state_fp: Path | None = None,
+    ):
+        self.snapshots_dir = snapshots_dir or SNAPSHOTS_DIR
+        self.trades_fp = trades_fp or TRADES_FP
+        self.cerebro_state_fp = cerebro_state_fp or CEREBRO_STATE_FP
+
+    # ------------------------------------------------------------------
+    # Snapshot + cerebro state loaders
+    # ------------------------------------------------------------------
+    def get_latest_snapshot(self, portfolio_id: str = "real") -> dict[str, Any] | None:
+        pdir = self.snapshots_dir / portfolio_id
+        if not pdir.exists():
+            return None
+        candidates: list[Path] = []
+        for f in pdir.glob("*.json"):
+            if f.name.startswith("_"):
+                continue
+            stem = f.stem
+            if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
+                candidates.append(f)
+        if not candidates:
+            return None
+        candidates.sort()
+        return json.loads(candidates[-1].read_text(encoding="utf-8"))
+
+    def _load_cerebro_state(self) -> dict[str, Any]:
+        if not self.cerebro_state_fp.exists():
+            return {}
+        try:
+            return json.loads(self.cerebro_state_fp.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+
+    # ------------------------------------------------------------------
+    # Enrichment — merge debate verdict + thesis status into positions
+    # ------------------------------------------------------------------
+    def get_enriched_positions(self) -> list[dict[str, Any]]:
+        snap = self.get_latest_snapshot()
+        if snap is None:
+            return []
+        nav = float(snap.get("nav_total_eur") or 0.0)
+        state = self._load_cerebro_state()
+        debates = state.get("debates_by_asset", {}) or {}
+        out: list[dict[str, Any]] = []
+        for p in snap.get("positions", []) or []:
+            ticker = p.get("ticker")
+            if not isinstance(ticker, str) or not ticker:
+                continue
+            qty = float(p.get("quantity") or 0.0)
+            cb_per_share = float(p.get("cost_basis_per_share_native") or 0.0)
+            current_price = float(p.get("current_price_native") or 0.0)
+            current_value_eur = float(p.get("current_value_eur") or 0.0)
+            cost_basis_eur = float(p.get("cost_basis_eur") or 0.0)
+            pnl_eur = float(p.get("unrealized_pnl_eur") or 0.0)
+            pnl_pct = (
+                (current_price / cb_per_share - 1.0) * 100.0
+                if cb_per_share > 0
+                else 0.0
+            )
+            weight = (
+                (current_value_eur / nav * 100.0) if nav > 0 else 0.0
+            )
+            debate_entry = debates.get(ticker)
+            debate_verdict = (
+                debate_entry.get("verdict") if isinstance(debate_entry, dict)
+                else "no_debate"
+            ) or "no_debate"
+            out.append(
+                {
+                    "ticker": ticker,
+                    "isin": p.get("isin", ""),
+                    "exchange": p.get("exchange", ""),
+                    "currency": p.get("currency", "USD"),
+                    "sector": p.get("sector_at_purchase") or "Unknown",
+                    "country": p.get("country_at_purchase") or "Unknown",
+                    "quantity": qty,
+                    "cost_basis_per_share_native": cb_per_share,
+                    "current_price_native": current_price,
+                    "cost_basis_eur": cost_basis_eur,
+                    "current_value_eur": current_value_eur,
+                    "weight_pct": weight,
+                    "unrealized_pnl_eur": pnl_eur,
+                    "unrealized_pnl_pct": pnl_pct,
+                    "debate_verdict": debate_verdict,
+                    "debate_action": (
+                        debate_entry.get("suggested_action")
+                        if isinstance(debate_entry, dict)
+                        else None
+                    ),
+                }
+            )
+        return out
+
+    # ------------------------------------------------------------------
+    # KPIs
+    # ------------------------------------------------------------------
+    def get_kpis(self) -> dict[str, Any]:
+        snap = self.get_latest_snapshot()
+        if snap is None:
+            return {
+                "as_of_date": None,
+                "nav_total_eur": 0.0,
+                "cash_eur": 0.0,
+                "n_positions": 0,
+                "unrealized_pnl_eur": 0.0,
+                "realized_pnl_ytd_eur": 0.0,
+                "cash_pct_nav": 0.0,
+            }
+        nav = float(snap.get("nav_total_eur") or 0.0)
+        cash = float(snap.get("cash_eur") or 0.0)
+        positions = snap.get("positions", []) or []
+        unrealized = sum(
+            float(p.get("unrealized_pnl_eur") or 0.0) for p in positions
+        )
+        return {
+            "as_of_date": snap.get("as_of_date"),
+            "nav_total_eur": nav,
+            "cash_eur": cash,
+            "cash_pct_nav": (cash / nav * 100.0) if nav > 0 else 0.0,
+            "n_positions": len(positions),
+            "unrealized_pnl_eur": round(unrealized, 2),
+            "realized_pnl_ytd_eur": round(self.get_realized_pnl_ytd(), 2),
+        }
+
+    # ------------------------------------------------------------------
+    # Concentrations + breach detection
+    # ------------------------------------------------------------------
+    def get_concentrations(self) -> dict[str, Any]:
+        positions = self.get_enriched_positions()
+        if not positions:
+            return {
+                "single_name": [],
+                "by_sector": [],
+                "by_country": [],
+                "max_single_pct": 0.0,
+                "max_sector_pct": 0.0,
+                "max_country_pct": 0.0,
+                "breaches": [],
+            }
+        # Single-name top 5
+        single = sorted(
+            positions, key=lambda p: -p["weight_pct"]
+        )[:5]
+        single_rows = [
+            {
+                "ticker": p["ticker"],
+                "weight_pct": p["weight_pct"],
+                "status": _classify_status(p["weight_pct"], CAP_SINGLE_NAME_PCT),
+            }
+            for p in single
+        ]
+        # Sector
+        sectors: dict[str, float] = {}
+        countries: dict[str, float] = {}
+        for p in positions:
+            sectors[p["sector"]] = sectors.get(p["sector"], 0.0) + p["weight_pct"]
+            countries[p["country"]] = (
+                countries.get(p["country"], 0.0) + p["weight_pct"]
+            )
+        sector_rows = sorted(
+            (
+                {
+                    "sector": s,
+                    "weight_pct": w,
+                    "status": _classify_status(w, CAP_SECTOR_PCT),
+                }
+                for s, w in sectors.items()
+            ),
+            key=lambda r: -r["weight_pct"],
+        )
+        country_rows = sorted(
+            (
+                {
+                    "country": c,
+                    "weight_pct": w,
+                    "status": _classify_status(w, CAP_COUNTRY_PCT),
+                }
+                for c, w in countries.items()
+            ),
+            key=lambda r: -r["weight_pct"],
+        )
+        breaches: list[str] = []
+        max_single = max((r["weight_pct"] for r in single_rows), default=0.0)
+        max_sector = max((r["weight_pct"] for r in sector_rows), default=0.0)
+        max_country = max((r["weight_pct"] for r in country_rows), default=0.0)
+        if max_single > CAP_SINGLE_NAME_PCT:
+            breaches.append(
+                f"single_name {max_single:.1f}% > {CAP_SINGLE_NAME_PCT}%"
+            )
+        if max_sector > CAP_SECTOR_PCT:
+            top_s = next(r["sector"] for r in sector_rows if r["weight_pct"] == max_sector)
+            breaches.append(f"sector {top_s} {max_sector:.1f}% > {CAP_SECTOR_PCT}%")
+        if max_country > CAP_COUNTRY_PCT:
+            top_c = next(r["country"] for r in country_rows if r["weight_pct"] == max_country)
+            breaches.append(f"country {top_c} {max_country:.1f}% > {CAP_COUNTRY_PCT}%")
+        return {
+            "single_name": single_rows,
+            "by_sector": sector_rows,
+            "by_country": country_rows,
+            "max_single_pct": round(max_single, 2),
+            "max_sector_pct": round(max_sector, 2),
+            "max_country_pct": round(max_country, 2),
+            "breaches": breaches,
+            "caps": {
+                "single": CAP_SINGLE_NAME_PCT,
+                "sector": CAP_SECTOR_PCT,
+                "country": CAP_COUNTRY_PCT,
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Realized P&L YTD (and per-year if needed by FiscalReader)
+    # ------------------------------------------------------------------
+    def get_realized_pnl_ytd(self, year: int | None = None) -> float:
+        target_year = year or date.today().year
+        if not self.trades_fp.exists():
+            return 0.0
+        total = 0.0
+        with self.trades_fp.open("r", encoding="utf-8") as fp:
+            for line in fp:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if ev.get("event_type") != "trade":
+                    continue
+                if ev.get("side") != "sell":
+                    continue
+                pnl = ev.get("realized_pnl_eur")
+                if pnl is None:
+                    continue
+                td = ev.get("trade_date", "")
+                if not isinstance(td, str) or len(td) < 4:
+                    continue
+                try:
+                    if int(td[:4]) != target_year:
+                        continue
+                except ValueError:
+                    continue
+                total += float(pnl)
+        return total
+
+
+# ---------------------------------------------------------------------------
+# Pure helper
+# ---------------------------------------------------------------------------
+def _classify_status(weight: float, cap: float) -> str:
+    """Returns 'breach' if weight > cap, 'warn' if > 85% cap, else 'ok'."""
+    if weight > cap:
+        return "breach"
+    if weight > cap * WARN_THRESHOLD:
+        return "warn"
+    return "ok"
