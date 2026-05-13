@@ -117,8 +117,13 @@ temp/
 .claude/agents/*.tar.gz
 .claude/agents/*.zip
 
-# Scratch local (scripts operacionales con datos hardcoded)
-scripts/
+# Scratch local (scripts operacionales con datos hardcoded).
+# We use `scripts/*` instead of `scripts/` so individual files can be
+# re-included with `!` (git won't re-include files inside an excluded
+# directory).
+scripts/*
+# Reusable, schema-stable scripts ARE committed (no hardcoded data).
+!scripts/generate_cerebro_state.py
 
 # -----------------------------------------------------------------------------
 # Dashboard secrets (Streamlit secret token store)
