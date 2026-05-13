@@ -124,6 +124,7 @@ temp/
 scripts/*
 # Reusable, schema-stable scripts ARE committed (no hardcoded data).
 !scripts/generate_cerebro_state.py
+!scripts/llm_narratives.py
 
 # -----------------------------------------------------------------------------
 # Dashboard secrets (Streamlit secret token store)

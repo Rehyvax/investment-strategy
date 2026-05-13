@@ -28,8 +28,14 @@ from typing import Any, Iterable, Iterator
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from src.portfolios.price_log import PriceLog  # noqa: E402
+from llm_narratives import (  # noqa: E402
+    generate_comparative_narrative,
+    generate_market_state_narrative,
+    is_llm_available,
+)
 
 SNAPSHOTS_DIR = ROOT / "data" / "snapshots"
 TRADES_DIR = ROOT / "data" / "events" / "portfolios"
@@ -214,7 +220,7 @@ def generate_market_state(as_of: date) -> dict[str, Any]:
             f"{bond_equity_ratio_30d * 100:+.1f}%."
         )
 
-    return {
+    state: dict[str, Any] = {
         "regime": regime,
         "regime_color": color,
         "explanation": explanation,
@@ -223,7 +229,20 @@ def generate_market_state(as_of: date) -> dict[str, Any]:
         "vix": vix if vix is not None else 0.0,
         "bond_equity_ratio_30d": bond_equity_ratio_30d,
         "fear_summary": fear_summary,
+        "_narrative_source": "rule_based",
     }
+
+    # LLM enrichment: try to upgrade the explanation with a Sonnet
+    # narrative. Falls back silently to the deterministic text if the
+    # API is unavailable or errors out.
+    if is_llm_available():
+        portfolio_ctx = generate_portfolio_real(as_of)
+        llm_text = generate_market_state_narrative(state, portfolio_ctx)
+        if llm_text:
+            state["explanation"] = llm_text
+            state["_narrative_source"] = "llm"
+
+    return state
 
 
 # ----------------------------------------------------------------------
@@ -756,13 +775,41 @@ def generate_comparative(as_of: date) -> dict[str, Any]:
                 f"Subir watch sobre {comparator}: evaluar si la diferencia "
                 "persiste a 30 días para conclusiones."
             )
-    return {
+    result: dict[str, Any] = {
         "headline": headline,
         "narrative": narrative,
         "comparator_today": comparator,
         "comparator_reason": _COMPARATOR_REASONS[comparator],
         "action": action,
+        "_narrative_source": "rule_based",
     }
+
+    if is_llm_available() and delta_comp is not None:
+        nav_shadow_now = _nav_on("shadow", as_of)
+        nav_shadow_t0 = _nav_on("shadow", t0)
+        nav_bench_now = _nav_on("benchmark_passive", as_of)
+        nav_bench_t0 = _nav_on("benchmark_passive", t0)
+        nav_robo_now = _nav_on("robo_advisor", as_of)
+        nav_robo_t0 = _nav_on("robo_advisor", t0)
+        llm_payload = {
+            "nav_real": nav_real_now or 0,
+            "delta_real_pct": delta_real,
+            "nav_shadow": nav_shadow_now or 0,
+            "delta_shadow_pct": _delta_pct(nav_shadow_now, nav_shadow_t0) or 0.0,
+            "nav_benchmark": nav_bench_now or 0,
+            "delta_benchmark_pct": _delta_pct(nav_bench_now, nav_bench_t0) or 0.0,
+            "nav_robo": nav_robo_now or 0,
+            "delta_robo_pct": _delta_pct(nav_robo_now, nav_robo_t0) or 0.0,
+            "comparator_today": comparator,
+            "diff_pp": delta_real - delta_comp,
+        }
+        llm_out = generate_comparative_narrative(llm_payload)
+        if llm_out:
+            result["headline"] = llm_out["headline"]
+            result["narrative"] = llm_out["narrative"]
+            result["_narrative_source"] = "llm"
+
+    return result
 
 
 # ----------------------------------------------------------------------

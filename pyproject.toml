@@ -140,6 +140,7 @@ markers = [
 
 [dependency-groups]
 dev = [
+    "anthropic>=0.101.0",
     "plotly>=6.7.0",
     "streamlit>=1.57.0",
 ]
