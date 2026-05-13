@@ -222,6 +222,138 @@ Reglas estrictas:
 Responde solo con el narrative, sin preámbulo."""
 
 
+# ----------------------------------------------------------------------
+# Position opinion (drill-down per ticker)
+# ----------------------------------------------------------------------
+POSITION_OPINION_PROMPT = """Eres un asesor de inversiones con tono institucional sobrio.
+
+Datos de la posición:
+- Asset: {asset}
+- Peso actual: {weight_pct:.2f}% NAV (EUR {position_eur})
+- Cost basis nativo: {cost_basis_native:.2f} {currency}
+- Precio actual: {current_price:.2f} {currency}
+- P&L latente: {pnl_eur:+.0f} EUR ({pnl_pct:+.2f}%)
+
+Tesis vigente ({thesis_version}):
+- Recomendación: {recommendation}
+- Confianza: {confidence}
+- Resumen: {thesis_summary}
+
+Falsifiers ({n_falsifiers} en total):
+{falsifiers_text}
+
+Contexto adicional:
+{additional_context}
+
+Genera análisis honesto matizado en 4-6 frases:
+1. Cómo está la posición HOY (si hay matiz: "1 falsifier rojo entre 3 verdes" → explícitalo).
+2. Por qué la opinión actual. Comprométete con UNA dirección.
+3. Acción concreta (cantidad si aplica) o "no toques nada".
+4. Si override usuario activo: respeta la decisión y recuerda los riesgos.
+
+Reglas estrictas:
+- NO emojis. NO scores numéricos ("82% confianza"). NO menús ("considerar A o B").
+- Si la tesis está intacta y la posición saludable: "no toques nada".
+- Si un falsifier está halfway: cita la próxima fecha de check.
+
+Responde solo con el análisis, sin preámbulo."""
+
+
+def generate_position_opinion(
+    position: dict[str, Any],
+    thesis: dict[str, Any],
+    falsifiers: list[dict[str, Any]],
+    additional_context: str = "",
+) -> str | None:
+    """LLM opinion on a single position drilled-down from Pantalla 3."""
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        lines: list[str] = []
+        status_icon = {
+            "inactive": "OK",
+            "halfway_activated": "MITAD",
+            "activated": "ACTIVO",
+            "active": "ACTIVO",
+        }
+        for f in falsifiers[:5]:
+            icon = status_icon.get(f.get("status", "unknown"), "?")
+            name = f.get("name", "?")
+            cur = f.get("current") or ""
+            cur_str = f" (actual: {cur})" if cur else ""
+            lines.append(f"  [{icon}] {name}: {f.get('status', 'unknown')}{cur_str}")
+        falsifiers_text = (
+            "\n".join(lines) if lines else "Sin falsifiers definidos"
+        )
+
+        cost_basis_native = float(position.get("cost_basis_native") or 0.0)
+        quantity = float(position.get("quantity") or 0.0)
+        cost_basis_per_share = (
+            cost_basis_native / quantity if quantity > 0 else 0.0
+        )
+        current_price = float(position.get("current_price_native") or 0.0)
+        position_eur = float(position.get("current_value_eur") or 0.0)
+        weight_pct = float(position.get("weight_pct") or 0.0)
+        pnl_eur = float(position.get("unrealized_pnl_eur") or 0.0)
+        pnl_pct = (
+            ((current_price / cost_basis_per_share) - 1.0) * 100.0
+            if cost_basis_per_share > 0
+            else 0.0
+        )
+
+        thesis_version = (
+            thesis.get("version")
+            or thesis.get("model_version")
+            or thesis.get("thesis_version")
+            or thesis.get("event_type", "thesis")
+        )
+        thesis_summary = (
+            thesis.get("note")
+            or thesis.get("confidence_justification")
+            or thesis.get("reasoning")
+            or "—"
+        )[:500]
+
+        prompt = POSITION_OPINION_PROMPT.format(
+            asset=position.get("ticker", "—"),
+            weight_pct=weight_pct,
+            position_eur=int(position_eur),
+            cost_basis_native=cost_basis_per_share,
+            current_price=current_price,
+            currency=position.get("currency", "USD"),
+            pnl_eur=pnl_eur,
+            pnl_pct=pnl_pct,
+            thesis_version=thesis_version,
+            recommendation=(
+                thesis.get("recommendation")
+                or thesis.get("recommendation_v2")
+                or "—"
+            ),
+            confidence=thesis.get("confidence_calibrated", "—"),
+            thesis_summary=thesis_summary,
+            n_falsifiers=len(falsifiers),
+            falsifiers_text=falsifiers_text,
+            additional_context=(
+                additional_context[:500]
+                if additional_context
+                else "Sin contexto adicional."
+            ),
+        )
+
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS_OPINION,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        block = response.content[0]
+        text = getattr(block, "text", None)
+        return text.strip() if text else None
+    except Exception as e:  # noqa: BLE001
+        print(f"LLM error (position opinion): {e}")
+        return None
+
+
 def refine_recommendation_narrative(
     rec: dict[str, Any],
     position_data: dict[str, Any],

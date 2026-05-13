@@ -902,6 +902,220 @@ def generate_news_feed(as_of: date) -> list[dict[str, Any]]:
 
 
 # ----------------------------------------------------------------------
+# Upcoming events per asset (yfinance calendar + dividends, 2-month rule,
+# thesis falsifier check dates). Consumed by Pantalla 3 Detalle.
+# ----------------------------------------------------------------------
+def _get_upcoming_events_for_asset(
+    ticker: str, as_of: date
+) -> list[dict[str, str]]:
+    """Returns up to 5 dated future events derived from real sources.
+    Never hardcoded. Sources tagged in `source` field of each event.
+
+    Sources:
+      - yfinance: next earnings + estimated ex-dividend
+      - real trades: 2-month rule LIRPF expirations
+      - thesis: gate / next_check / next_evaluation_trigger dates
+    """
+    import re
+
+    events: list[dict[str, str]] = []
+    as_of_str = as_of.isoformat()
+
+    # --- yfinance earnings + estimated ex-dividend -------------------
+    try:
+        import yfinance as yf
+        import pandas as pd
+
+        try:
+            t = yf.Ticker(ticker)
+        except Exception:
+            t = None
+        if t is not None:
+            # Earnings
+            try:
+                cal = t.calendar
+                earnings_date = None
+                if cal is not None:
+                    if (
+                        hasattr(cal, "columns")
+                        and "Earnings Date" in getattr(cal, "columns", [])
+                    ):
+                        earnings_date = cal["Earnings Date"].iloc[0]
+                    elif isinstance(cal, dict) and "Earnings Date" in cal:
+                        ed = cal["Earnings Date"]
+                        earnings_date = ed[0] if isinstance(ed, list) else ed
+                if earnings_date is not None:
+                    ts = pd.Timestamp(earnings_date)
+                    if ts.date() > as_of:
+                        events.append(
+                            {
+                                "date": ts.strftime("%Y-%m-%d"),
+                                "event": "Próximo earnings",
+                                "type": "earnings",
+                                "source": "yfinance_calendar",
+                            }
+                        )
+            except Exception:
+                pass
+
+            # Ex-dividend estimate from recurring frequency
+            try:
+                divs = t.dividends
+                if divs is not None and not divs.empty and len(divs) >= 2:
+                    last_div_date = divs.index[-1]
+                    gap_days = (
+                        last_div_date - divs.index[-2]
+                    ).days or 91
+                    estimated_next = last_div_date + pd.Timedelta(
+                        days=gap_days
+                    )
+                    if estimated_next.date() > as_of:
+                        events.append(
+                            {
+                                "date": estimated_next.strftime("%Y-%m-%d"),
+                                "event": (
+                                    f"Ex-dividend estimado "
+                                    f"(último {float(divs.iloc[-1]):.2f})"
+                                ),
+                                "type": "dividend_estimated",
+                                "source": "yfinance_estimate",
+                            }
+                        )
+            except Exception:
+                pass
+    except ImportError:
+        pass
+
+    # --- 2-month rule LIRPF from realized losses ---------------------
+    trades_path = TRADES_DIR / "real" / "trades.jsonl"
+    for tr in _iter_jsonl(trades_path):
+        if tr.get("ticker") != ticker:
+            continue
+        if tr.get("side") != "sell" or not tr.get("is_loss"):
+            continue
+        end = tr.get("two_month_rule_window_end")
+        if isinstance(end, str) and end > as_of_str:
+            events.append(
+                {
+                    "date": end,
+                    "event": (
+                        "Fin 2-month rule LIRPF (puedes recomprar sin "
+                        "perder la deducción)"
+                    ),
+                    "type": "tax_rule",
+                    "source": "trades_log",
+                }
+            )
+
+    # --- Thesis gates / falsifier check dates ------------------------
+    thesis_path = THESES_DIR / f"{ticker}.jsonl"
+    if thesis_path.exists():
+        thesis = None
+        for v in reversed(list(_iter_jsonl(thesis_path))):
+            if v.get("event_type") in ("thesis", "thesis_review"):
+                thesis = v
+                break
+        if thesis is not None:
+            fsa = thesis.get("falsifier_status_audit", {})
+            if isinstance(fsa, dict):
+                for name, det in fsa.items():
+                    if not isinstance(det, dict):
+                        continue
+                    nxt = det.get("next_check_date") or det.get(
+                        "next_gate_date"
+                    )
+                    if isinstance(nxt, str) and nxt > as_of_str:
+                        events.append(
+                            {
+                                "date": nxt,
+                                "event": f"Check falsifier: {name}",
+                                "type": "thesis_gate",
+                                "source": "thesis",
+                            }
+                        )
+            for fld in (
+                "next_evaluation_trigger",
+                "next_review",
+                "next_evaluation_date",
+            ):
+                v = thesis.get(fld)
+                if isinstance(v, str):
+                    m = re.search(r"\d{4}-\d{2}-\d{2}", v)
+                    if m and m.group() > as_of_str:
+                        events.append(
+                            {
+                                "date": m.group(),
+                                "event": "Re-evaluación de la tesis",
+                                "type": "thesis_review",
+                                "source": "thesis",
+                            }
+                        )
+                        break
+            # Catalysts already structured in the thesis.
+            for c in thesis.get("catalysts_upcoming", []) or []:
+                if not isinstance(c, dict):
+                    continue
+                d_str = (
+                    c.get("expected_date")
+                    or c.get("date")
+                    or c.get("when")
+                )
+                if isinstance(d_str, str):
+                    m = re.search(r"\d{4}-\d{2}-\d{2}", d_str)
+                    if m and m.group() > as_of_str:
+                        label = (
+                            c.get("description")
+                            or c.get("name")
+                            or c.get("event")
+                            or c.get("catalyst")
+                            or "Catalizador"
+                        )
+                        events.append(
+                            {
+                                "date": m.group(),
+                                "event": str(label),
+                                "type": "thesis_catalyst",
+                                "source": "thesis",
+                            }
+                        )
+
+    # Sort + dedupe by (date, event)
+    seen: set[tuple[str, str]] = set()
+    out: list[dict[str, str]] = []
+    for e in sorted(events, key=lambda x: x["date"]):
+        key = (e["date"], e["event"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(e)
+    return out[:5]
+
+
+def generate_upcoming_events_by_asset(
+    as_of: date,
+) -> dict[str, list[dict[str, str]]]:
+    """Per-ticker upcoming events for the dashboard's Pantalla 3."""
+    out: dict[str, list[dict[str, str]]] = {}
+    snap = _load_snapshot("real", as_of)
+    tickers: set[str] = set()
+    if snap:
+        for p in snap.get("positions", []) or []:
+            t = p.get("ticker")
+            if isinstance(t, str):
+                tickers.add(t)
+    # Also include any ticker with a thesis even if not currently held
+    # (e.g. AXON during a wind-down).
+    if THESES_DIR.exists():
+        for f in THESES_DIR.glob("*.jsonl"):
+            tickers.add(f.stem)
+    for ticker in sorted(tickers):
+        events = _get_upcoming_events_for_asset(ticker, as_of)
+        if events:
+            out[ticker] = events
+    return out
+
+
+# ----------------------------------------------------------------------
 # Main orchestrator + atomic write
 # ----------------------------------------------------------------------
 def generate_cerebro_state(as_of: date) -> dict[str, Any]:
@@ -917,6 +1131,7 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
         "recommendations": generate_recommendations(as_of),
         "comparative_analysis": generate_comparative(as_of),
         "news_feed": generate_news_feed(as_of),
+        "upcoming_events_by_asset": generate_upcoming_events_by_asset(as_of),
     }
 
 
