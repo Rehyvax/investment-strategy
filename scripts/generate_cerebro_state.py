@@ -37,6 +37,18 @@ from llm_narratives import (  # noqa: E402
     is_llm_available,
 )
 
+
+def _load_env_file() -> None:
+    """Load .env into the process environment. Called from `main()` —
+    NOT at import time — so importing this module never triggers a
+    live LLM path during tests."""
+    try:
+        from dotenv import load_dotenv  # type: ignore
+
+        load_dotenv(ROOT / ".env")
+    except ImportError:
+        pass
+
 SNAPSHOTS_DIR = ROOT / "data" / "snapshots"
 TRADES_DIR = ROOT / "data" / "events" / "portfolios"
 THESES_DIR = ROOT / "data" / "events" / "theses"
@@ -847,6 +859,7 @@ def _atomic_write(path: Path, payload: dict) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _load_env_file()
     p = argparse.ArgumentParser(description="Generate cerebro_state.json.")
     p.add_argument("--date", type=str, default=None)
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
