@@ -44,6 +44,9 @@ from technical_analyst import (  # noqa: E402
 from fundamentals_analyst import (  # noqa: E402
     compute_all_fundamentals_for_portfolio,
 )
+from agents.reflection import aggregate_brier  # noqa: E402
+
+DEBATES_DIR_GEN = ROOT / "data" / "events" / "debates"
 
 
 def _load_env_file() -> None:
@@ -936,6 +939,29 @@ def generate_news_by_asset(
     return out
 
 
+def generate_debates_by_asset(
+    *, debates_dir: Path | None = None
+) -> dict[str, dict[str, Any]]:
+    """Returns the latest debate verdict per ticker (from any month
+    JSONL under data/events/debates/). Empty dict when no debate has
+    ever been persisted."""
+    debates_dir = debates_dir or DEBATES_DIR_GEN
+    if not debates_dir.exists():
+        return {}
+    by_ticker_latest: dict[str, dict[str, Any]] = {}
+    by_ticker_ts: dict[str, str] = {}
+    for f in debates_dir.glob("*.jsonl"):
+        for ev in _iter_jsonl(f):
+            t = ev.get("ticker")
+            ts = ev.get("timestamp", "")
+            if not t:
+                continue
+            if ts > by_ticker_ts.get(t, ""):
+                by_ticker_latest[t] = ev
+                by_ticker_ts[t] = ts
+    return by_ticker_latest
+
+
 def generate_news_feed(
     news_by_asset: dict[str, list[dict[str, Any]]],
     *,
@@ -1192,6 +1218,8 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
     fundamentals_by_asset = compute_all_fundamentals_for_portfolio(
         portfolio_id="real"
     )
+    debates_by_asset = generate_debates_by_asset()
+    brier = aggregate_brier(days=30)
     return {
         "generated_at": _now_iso_utc(),
         "next_evaluation": next_eval.isoformat().replace("+00:00", "Z"),
@@ -1206,6 +1234,9 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
         "news_feed": generate_news_feed(news_by_asset),
         "technicals_by_asset": technicals_by_asset,
         "fundamentals_by_asset": fundamentals_by_asset,
+        "debates_by_asset": debates_by_asset,
+        "brier_score_30d": brier["score"],
+        "brier_n_evaluations_30d": brier["n"],
         "upcoming_events_by_asset": generate_upcoming_events_by_asset(as_of),
     }
 
@@ -1252,6 +1283,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         f"  Fundamentals by asset: {len(state['fundamentals_by_asset'])} tickers"
+    )
+    print(
+        f"  Debates by asset: {len(state['debates_by_asset'])} tickers"
+    )
+    brier_score = state["brier_score_30d"]
+    print(
+        f"  Brier 30d: {brier_score if brier_score is not None else '—'} "
+        f"(n={state['brier_n_evaluations_30d']})"
     )
     return 0
 

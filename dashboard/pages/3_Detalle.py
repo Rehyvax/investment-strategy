@@ -425,6 +425,144 @@ else:
     st.info("Sin opinión: se necesita posición + tesis.")
 
 # ----------------------------------------------------------------------
+# Block H — Debate Bull vs Bear (Fase 3D)
+# ----------------------------------------------------------------------
+st.markdown("<h2>Debate Bull vs Bear</h2>", unsafe_allow_html=True)
+
+last_debate = (cerebro_state.get("debates_by_asset", {}) or {}).get(selected)
+
+if last_debate:
+    verdict = last_debate.get("verdict", "thesis_neutral")
+    suggested = last_debate.get("suggested_action", "maintain")
+    confidence = last_debate.get("confidence", "low")
+    weight = last_debate.get("weight", "balanced")
+    timestamp = (last_debate.get("timestamp") or "")[:10]
+    reasoning = last_debate.get("reasoning", "")
+    trigger = last_debate.get("trigger_reason", "—")
+    key_evidence = last_debate.get("key_evidence_for_verdict", "")
+    key_trigger = last_debate.get("key_trigger_to_monitor", "")
+
+    verdict_color = {
+        "thesis_strengthened": "green",
+        "thesis_neutral": "neutral",
+        "thesis_weakened": "yellow",
+        "thesis_invalidated": "red",
+    }.get(verdict, "neutral")
+    weight_color = {
+        "bull_wins": "green",
+        "bear_wins": "red",
+        "balanced": "neutral",
+    }.get(weight, "neutral")
+
+    verdict_badge = status_badge(
+        verdict.upper().replace("_", " "), verdict_color
+    )
+    weight_badge = status_badge(
+        weight.upper().replace("_", " "), weight_color
+    )
+
+    extras = ""
+    if key_evidence:
+        extras += (
+            f"<div style='margin-top:8px; font-size:0.8125rem; color:#475569;'>"
+            f"<b>Evidencia clave:</b> {key_evidence}</div>"
+        )
+    if key_trigger:
+        extras += (
+            f"<div style='margin-top:4px; font-size:0.8125rem; color:#475569;'>"
+            f"<b>Trigger a vigilar:</b> {key_trigger}</div>"
+        )
+
+    st.markdown(
+        f"""
+        <div class="institutional-card">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                {verdict_badge}
+                {weight_badge}
+                <span style="font-size:0.75rem; color:#64748B;">
+                    {timestamp} · confianza {confidence} · trigger {trigger}
+                </span>
+            </div>
+            <p style="color:#0F172A; line-height:1.6; margin:0 0 10px 0;
+                      white-space:pre-wrap;">{reasoning}</p>
+            {extras}
+            <div style="margin-top:14px; background:#F1F5F9; padding:12px;
+                        border-radius:6px;">
+                <span style="font-size:0.75rem; color:#64748B; font-weight:600;
+                             text-transform:uppercase; letter-spacing:0.05em;">
+                    Acción sugerida
+                </span>
+                <p style="margin:6px 0 0 0; color:#0F172A;">{suggested}</p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    bull_rounds = last_debate.get("bull_rounds") or []
+    bear_rounds = last_debate.get("bear_rounds") or []
+    if bull_rounds or bear_rounds:
+        with st.expander("Ver transcripción del debate"):
+            for i in range(max(len(bull_rounds), len(bear_rounds))):
+                if i < len(bull_rounds):
+                    st.markdown(
+                        f"**Bull (round {i + 1}):** {bull_rounds[i]}"
+                    )
+                if i < len(bear_rounds):
+                    st.markdown(
+                        f"**Bear (round {i + 1}):** {bear_rounds[i]}"
+                    )
+                if i < max(len(bull_rounds), len(bear_rounds)) - 1:
+                    st.markdown("---")
+else:
+    st.markdown(
+        f"""
+        <div class="institutional-card" style="background:#F8FAFC;">
+            <p style="margin:0; color:#475569;">
+                Sin debate registrado para {selected}. Se ejecuta semanalmente
+                o cuando hay news high relevance.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button(
+        "Forzar debate ahora",
+        key=f"force_debate_{selected}",
+        type="secondary",
+        help="Coste estimado ~$0.10-0.15 USD por debate (3-4 LLM calls).",
+    ):
+        with st.spinner("Ejecutando debate Bull vs Bear (60-90s)…"):
+            import subprocess
+            try:
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        "scripts/run_weekly_debates.py",
+                        "--force",
+                        "--ticker",
+                        selected,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(PROJECT_ROOT),
+                    timeout=180,
+                )
+                if result.returncode == 0:
+                    st.success(
+                        "Debate completado. Pulsa 'Iniciar evaluación' "
+                        "en el sidebar para refrescar el cerebro."
+                    )
+                else:
+                    st.error(
+                        f"Error: {result.stderr[:300] or result.stdout[:300]}"
+                    )
+            except subprocess.TimeoutExpired:
+                st.error("Timeout (180s). Revisa logs/weekly_debates.log.")
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Error: {exc}")
+
+# ----------------------------------------------------------------------
 # Block D — Datos clave (position + fundamentals + technicals)
 # ----------------------------------------------------------------------
 st.markdown("<h2>Datos Clave</h2>", unsafe_allow_html=True)

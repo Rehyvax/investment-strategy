@@ -132,7 +132,15 @@ scripts/*
 !scripts/fundamentals_analyst.py
 !scripts/run_daily_cerebro.bat
 !scripts/run_daily_news_scanner.bat
+!scripts/run_weekly_debates.py
+!scripts/run_weekly_debates.bat
+!scripts/run_daily_reflections.py
+!scripts/run_daily_reflections.bat
 !scripts/install_daily_task.ps1
+# Whole-folder un-ignore for the agents package — every module under
+# scripts/agents/ is committed code (no hardcoded data).
+!scripts/agents/
+!scripts/agents/*.py
 
 # -----------------------------------------------------------------------------
 # Daily cron logs — local only.

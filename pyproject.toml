@@ -35,6 +35,11 @@ dependencies = [
     "feedparser>=6.0,<7",        # RSS parsing for news_scanner (Yahoo+Google)
     "beautifulsoup4>=4.12,<5",   # HTML cleanup for news snippets when needed
 
+    # Multi-agent orchestration (Bull/Bear debate, Reflection loop)
+    "langgraph>=1.0,<2",
+    "langchain-core>=1.0,<2",
+    "langchain-anthropic>=1.0,<2",
+
     # Quant & risk
     "scikit-learn>=1.5,<2",
     "statsmodels>=0.14,<1",
@@ -150,4 +155,6 @@ dev = [
     "anthropic>=0.101.0",
     "plotly>=6.7.0",
     "streamlit>=1.57.0",
+    "pytest>=8.2,<10",
+    "pytest-cov>=5,<10",
 ]
