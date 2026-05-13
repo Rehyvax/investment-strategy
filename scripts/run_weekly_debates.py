@@ -7,10 +7,16 @@ LangGraph Bull/Bear debate. Persists each verdict + transcript via
 
 CLI:
     python scripts/run_weekly_debates.py
-        Run for every position in the real snapshot.
+        Default: respect trigger logic (skips tickers without a
+        first_debate / weekly_schedule / news_high reason).
 
     python scripts/run_weekly_debates.py --force --ticker MSFT
-        Force a single debate on MSFT (skips trigger logic).
+        Force a single debate on MSFT (bypasses trigger logic).
+
+    python scripts/run_weekly_debates.py --weekly-sweep
+        Force debate on ALL real-portfolio positions. Used by the
+        manual sweep button in the dashboard. Persists an audit entry
+        to data/events/weekly_sweeps.jsonl.
 
     python scripts/run_weekly_debates.py --max-tickers 3
         Cap the number of debates this run (cost control).
@@ -25,7 +31,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +55,11 @@ LOGS_DIR.mkdir(exist_ok=True)
 
 CEREBRO_PATH = ROOT / "dashboard" / "data" / "cerebro_state.json"
 SNAPSHOT_DIR = ROOT / "data" / "snapshots" / "real"
+WEEKLY_SWEEPS_LOG = ROOT / "data" / "events" / "weekly_sweeps.jsonl"
+
+# Per-debate cost estimate used only for the audit log (USD). Keep this
+# in sync with the cost shown in the dashboard sidebar confirmation.
+COST_PER_DEBATE_USD = 0.18
 
 
 logger = logging.getLogger("weekly_debates")
@@ -166,6 +177,22 @@ def _resolve_thesis(ticker: str) -> tuple[dict[str, Any] | None, list[dict[str, 
     return thesis, falsifiers
 
 
+def _persist_sweep_audit(debates_run: int, debates_skipped: int) -> Path:
+    """Append a single audit entry per `--weekly-sweep` invocation.
+    Used by the dashboard sidebar to display the freshness widget."""
+    WEEKLY_SWEEPS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "debates_run": debates_run,
+        "debates_skipped": debates_skipped,
+        "trigger": "manual_weekly_sweep",
+        "estimated_cost_usd": round(debates_run * COST_PER_DEBATE_USD, 2),
+    }
+    with WEEKLY_SWEEPS_LOG.open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    return WEEKLY_SWEEPS_LOG
+
+
 def main(argv: list[str] | None = None) -> int:
     _configure_logger()
     parser = argparse.ArgumentParser(description="Weekly Bull/Bear debate runner.")
@@ -173,11 +200,33 @@ def main(argv: list[str] | None = None) -> int:
                         help="Run for a single ticker (else: all positions).")
     parser.add_argument("--force", action="store_true",
                         help="Skip trigger checks (always run).")
+    parser.add_argument(
+        "--weekly-sweep",
+        action="store_true",
+        help=(
+            "Force debate for ALL real-portfolio positions and append a "
+            "manual_weekly_sweep entry to data/events/weekly_sweeps.jsonl. "
+            "Used by the dashboard 'Ejecutar barrido semanal' button."
+        ),
+    )
     parser.add_argument("--max-tickers", type=int, default=None,
                         help="Cap the number of debates this run.")
     parser.add_argument("--max-rounds", type=int, default=2,
                         help="Number of rebuttal rounds (default 2).")
     args = parser.parse_args(argv)
+
+    if args.weekly_sweep:
+        logger.info("WEEKLY SWEEP MODE: forcing debate for ALL positions")
+        force_mode = True
+        # `--weekly-sweep` overrides `--ticker` because it explicitly
+        # asks for the full portfolio run.
+        target_ticker = None
+    elif args.ticker:
+        force_mode = True  # explicit single-ticker run is always forced
+        target_ticker = args.ticker.upper()
+    else:
+        force_mode = args.force
+        target_ticker = None
 
     snapshot = _load_latest_snapshot()
     if snapshot is None:
@@ -186,10 +235,10 @@ def main(argv: list[str] | None = None) -> int:
     cerebro_state = _load_cerebro_state()
 
     positions = snapshot.get("positions", []) or []
-    if args.ticker:
-        positions = [p for p in positions if p.get("ticker") == args.ticker]
+    if target_ticker is not None:
+        positions = [p for p in positions if p.get("ticker") == target_ticker]
         if not positions:
-            logger.error(f"Ticker {args.ticker} not in latest snapshot")
+            logger.error(f"Ticker {target_ticker} not in latest snapshot")
             return 1
     if args.max_tickers is not None:
         positions = positions[: args.max_tickers]
@@ -202,7 +251,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
 
         decision = should_run_debate(
-            ticker, cerebro_state, force=args.force
+            ticker, cerebro_state, force=force_mode
         )
         if not decision.get("trigger"):
             logger.info(f"{ticker}: skip ({decision.get('reason')})")
@@ -226,6 +275,16 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     logger.info(f"Done: {debates_run} run, {debates_skipped} skipped")
+
+    # Audit trail for the manual sweep button.
+    if args.weekly_sweep and debates_run > 0:
+        log_path = _persist_sweep_audit(debates_run, debates_skipped)
+        est = round(debates_run * COST_PER_DEBATE_USD, 2)
+        logger.info(
+            f"Weekly sweep audit appended to {log_path} "
+            f"(debates_run={debates_run}, est. ${est})"
+        )
+
     return 0
 
 

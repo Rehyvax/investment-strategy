@@ -222,3 +222,22 @@ class TestPersistDebate:
         assert ev["ticker"] == "MSFT"
         assert ev["trigger_reason"] == "user_force"
         assert ev["verdict"] == "thesis_neutral"
+
+
+# ---------------------------------------------------------------------------
+# --weekly-sweep flag semantics
+# ---------------------------------------------------------------------------
+class TestWeeklySweepFlag:
+    def test_force_bypasses_news_high_check(self, tmp_path):
+        """`--weekly-sweep` is implemented in the runner as `force=True`
+        on every position. Verify that path: a ticker with no news_high
+        and no prior debate still triggers under force=True with the
+        explicit user_force reason."""
+        out = debate_trigger.should_run_debate(
+            "MSFT",
+            cerebro_state={"news_by_asset": {"MSFT": []}},
+            force=True,
+            debates_dir=tmp_path,
+        )
+        assert out["trigger"] is True
+        assert out["reason"] == "user_force"
