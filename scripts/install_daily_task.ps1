@@ -7,9 +7,11 @@
 #   Investment_News_Scan_Daily       Mon-Fri 07:30  news_scanner.py
 #   Investment_Cerebro_Daily         Mon-Fri 08:00  generate_cerebro_state.py
 #   Investment_Reflections_Daily     Mon-Fri 08:30  run_daily_reflections.py
+#   Investment_Nightly_Backup        Daily   23:00  backup_nightly.py
 #
-# The 30-min gaps let earlier tasks finish before downstream consumers
-# run.
+# The 30-min gaps between morning tasks let earlier tasks finish before
+# downstream consumers run. The nightly backup runs Mon-Sun (data
+# changes during weekends are rare but worth preserving).
 #
 # DELIBERATELY NOT installed: the weekly Bull/Bear debate sweep.
 # Spend (~$3-4 per full sweep on 19 positions) is gated behind the
@@ -84,6 +86,23 @@ Install-WeeklyTask `
 # NOTE: Investment_Weekly_Debates is intentionally not installed.
 # Use the dashboard sidebar 'Ejecutar barrido semanal' button to
 # trigger the full sweep on demand with cost confirmation.
+
+# Nightly backup runs every day (Mon-Sun) — uses a Daily trigger,
+# not the Weekly helper above.
+Unregister-ScheduledTask -TaskName "Investment_Nightly_Backup" -Confirm:$false -ErrorAction SilentlyContinue
+$BackupAction = New-ScheduledTaskAction -Execute "$PROJECT\scripts\run_nightly_backup.bat"
+$BackupTrigger = New-ScheduledTaskTrigger -Daily -At "23:00"
+$BackupSettings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable
+Register-ScheduledTask `
+    -TaskName "Investment_Nightly_Backup" `
+    -Action $BackupAction `
+    -Trigger $BackupTrigger `
+    -Settings $BackupSettings `
+    -Description "Nightly zip backup of data/ + dashboard/data + MEMORY.md (30d retention)." | Out-Null
+Write-Host "Task 'Investment_Nightly_Backup' created (Daily 23:00)."
 
 Write-Host ""
 Write-Host "Manual run:    Start-ScheduledTask -TaskName 'Investment_News_Scan_Daily'"

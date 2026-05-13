@@ -117,6 +117,9 @@ temp/
 .claude/agents/*.tar.gz
 .claude/agents/*.zip
 
+# Nightly data backups (zips of data/ + dashboard/data) — local only.
+backups/
+
 # Scratch local (scripts operacionales con datos hardcoded).
 # We use `scripts/*` instead of `scripts/` so individual files can be
 # re-included with `!` (git won't re-include files inside an excluded
@@ -131,12 +134,15 @@ scripts/*
 !scripts/technical_analyst.py
 !scripts/fundamentals_analyst.py
 !scripts/mercado_ai.py
+!scripts/notifications.py
+!scripts/backup_nightly.py
 !scripts/run_daily_cerebro.bat
 !scripts/run_daily_news_scanner.bat
 !scripts/run_weekly_debates.py
 !scripts/run_weekly_debates.bat
 !scripts/run_daily_reflections.py
 !scripts/run_daily_reflections.bat
+!scripts/run_nightly_backup.bat
 !scripts/install_daily_task.ps1
 # Whole-folder un-ignore for the agents package — every module under
 # scripts/agents/ is committed code (no hardcoded data).

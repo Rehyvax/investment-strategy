@@ -1,0 +1,232 @@
+"""Thesis browser — list + filter + timeline over data/events/theses/*.jsonl.
+
+Adapted to the actual on-disk schema (not the idealized schema in
+the spec):
+- event_type ∈ {"thesis", "thesis_review", "thesis_user_override_annotation",
+                "thesis_position_size_change", "thesis_closed_position"}
+- recommendation (not "verdict") ∈ {"watch","hold","exit","reduce","buy",...}
+- confidence_calibrated (numeric 0-1, not a "high|medium|low" string)
+- sector / country live on snapshot positions (not on thesis events) —
+  resolved via the latest real snapshot when available
+
+Synthetic `status` values returned by this browser:
+- "closed"           — last event in chain is thesis_closed_position
+- "override_active"  — last thesis-related event is an override annotation
+                       with user_override_active=true
+- "halfway_active"   — at least one falsifier_status_audit entry has
+                       status in {"halfway_activated","activated"}
+- "active"           — none of the above; thesis stands clean
+- "no_thesis"        — file exists but has no `thesis` event (unlikely)
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+LAB_ROOT = Path(__file__).resolve().parents[2]
+THESES_DIR = LAB_ROOT / "data" / "events" / "theses"
+SNAPSHOTS_DIR = LAB_ROOT / "data" / "snapshots" / "real"
+
+
+class ThesisBrowser:
+    def __init__(
+        self,
+        theses_dir: Path | None = None,
+        snapshots_dir: Path | None = None,
+    ):
+        self.theses_dir = theses_dir or THESES_DIR
+        self.snapshots_dir = snapshots_dir or SNAPSHOTS_DIR
+        self._events_cache: list[dict[str, Any]] | None = None
+        self._sector_country_cache: dict[str, dict[str, str]] | None = None
+
+    # ------------------------------------------------------------------
+    # Loaders
+    # ------------------------------------------------------------------
+    def _load_all_events(self) -> list[dict[str, Any]]:
+        if self._events_cache is not None:
+            return self._events_cache
+        events: list[dict[str, Any]] = []
+        if self.theses_dir.exists():
+            for f in sorted(self.theses_dir.glob("*.jsonl")):
+                with f.open("r", encoding="utf-8") as fp:
+                    for line in fp:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            events.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            continue
+        self._events_cache = events
+        return events
+
+    def _sector_country_for(self, ticker: str) -> dict[str, str]:
+        """Best-effort sector/country lookup from the latest snapshot.
+        Cached for the lifetime of this browser instance."""
+        if self._sector_country_cache is not None:
+            return self._sector_country_cache.get(
+                ticker, {"sector": "unknown", "country": "unknown"}
+            )
+        cache: dict[str, dict[str, str]] = {}
+        if self.snapshots_dir.exists():
+            cands = sorted(
+                f
+                for f in self.snapshots_dir.glob("*.json")
+                if not f.name.startswith("_")
+                and len(f.stem) == 10
+                and f.stem[4] == "-"
+            )
+            if cands:
+                try:
+                    snap = json.loads(cands[-1].read_text(encoding="utf-8"))
+                except (json.JSONDecodeError, OSError):
+                    snap = {}
+                for p in snap.get("positions", []) or []:
+                    t = p.get("ticker")
+                    if isinstance(t, str):
+                        cache[t] = {
+                            "sector": p.get("sector_at_purchase") or "unknown",
+                            "country": p.get("country_at_purchase") or "unknown",
+                        }
+        self._sector_country_cache = cache
+        return cache.get(
+            ticker, {"sector": "unknown", "country": "unknown"}
+        )
+
+    # ------------------------------------------------------------------
+    # Asset list (one entry per ticker)
+    # ------------------------------------------------------------------
+    def list_all_assets_with_theses(self) -> list[dict[str, Any]]:
+        events = self._load_all_events()
+        by_ticker: dict[str, list[dict[str, Any]]] = {}
+        for ev in events:
+            t = ev.get("ticker")
+            if not isinstance(t, str) or not t:
+                continue
+            by_ticker.setdefault(t, []).append(ev)
+
+        results: list[dict[str, Any]] = []
+        for ticker, ticker_events in by_ticker.items():
+            ticker_events.sort(key=lambda x: x.get("timestamp", ""))
+            results.append(self._summarize_asset(ticker, ticker_events))
+        results.sort(
+            key=lambda x: x.get("last_event_date", ""), reverse=True
+        )
+        return results
+
+    def _summarize_asset(
+        self, ticker: str, ticker_events: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        is_closed = any(
+            e.get("event_type") == "thesis_closed_position"
+            for e in ticker_events
+        )
+        latest_thesis = next(
+            (
+                e for e in reversed(ticker_events)
+                if e.get("event_type") in ("thesis", "thesis_review")
+            ),
+            None,
+        )
+        latest_override = next(
+            (
+                e for e in reversed(ticker_events)
+                if e.get("event_type") == "thesis_user_override_annotation"
+                and e.get("user_override_active")
+            ),
+            None,
+        )
+        recommendation = (
+            (latest_thesis or {}).get("recommendation")
+            or (latest_thesis or {}).get("recommendation_v2")
+            or "—"
+        )
+        confidence = (latest_thesis or {}).get(
+            "confidence_calibrated"
+        )
+        # Halfway falsifier?
+        halfway = False
+        if latest_thesis:
+            fsa = latest_thesis.get("falsifier_status_audit") or {}
+            if isinstance(fsa, dict):
+                for det in fsa.values():
+                    if isinstance(det, dict):
+                        st = (det.get("status") or "").lower()
+                        if st in ("halfway_activated", "activated", "active"):
+                            halfway = True
+                            break
+
+        if is_closed:
+            status = "closed"
+        elif latest_override is not None:
+            status = "override_active"
+        elif halfway:
+            status = "halfway_active"
+        elif latest_thesis is not None:
+            status = "active"
+        else:
+            status = "no_thesis"
+
+        meta = self._sector_country_for(ticker)
+        return {
+            "ticker": ticker,
+            "status": status,
+            "recommendation": recommendation,
+            "confidence_calibrated": confidence,
+            "sector": meta["sector"],
+            "country": meta["country"],
+            "n_events": len(ticker_events),
+            "last_event_date": (ticker_events[-1].get("timestamp") or "")[:10],
+            "is_closed": is_closed,
+            "has_halfway_falsifier": halfway,
+        }
+
+    # ------------------------------------------------------------------
+    # Filters + distinct values
+    # ------------------------------------------------------------------
+    def filter_assets(
+        self,
+        *,
+        status: str | None = None,
+        recommendation: str | None = None,
+        sector: str | None = None,
+        country: str | None = None,
+        search_query: str | None = None,
+    ) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for a in self.list_all_assets_with_theses():
+            if status and a["status"] != status:
+                continue
+            if recommendation and a["recommendation"] != recommendation:
+                continue
+            if sector and a["sector"] != sector:
+                continue
+            if country and a["country"] != country:
+                continue
+            if search_query and search_query.upper() not in a["ticker"].upper():
+                continue
+            out.append(a)
+        return out
+
+    def get_distinct_values(self, field: str) -> list[str]:
+        """`field` ∈ {status, recommendation, sector, country}. Returns
+        sorted unique non-unknown values from the asset list."""
+        values: set[str] = set()
+        for a in self.list_all_assets_with_theses():
+            v = a.get(field)
+            if isinstance(v, str) and v and v != "unknown":
+                values.add(v)
+        return sorted(values)
+
+    # ------------------------------------------------------------------
+    # Timeline (chronological)
+    # ------------------------------------------------------------------
+    def get_timeline(self, ticker: str) -> list[dict[str, Any]]:
+        events = [
+            e for e in self._load_all_events()
+            if e.get("ticker") == ticker
+        ]
+        events.sort(key=lambda x: x.get("timestamp", ""))
+        return events

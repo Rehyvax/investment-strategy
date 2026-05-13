@@ -1267,6 +1267,40 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     _atomic_write(args.out, state)
+
+    # Notifications hook (optional, non-fatal). Sends emails / Telegram
+    # only when SMTP / Telegram env keys are configured; otherwise the
+    # helpers no-op silently. Runs after the state is on disk so a
+    # transient SMTP error never blocks the cerebro write.
+    try:
+        from notifications import (  # noqa: WPS433
+            notify_debate_verdict,
+            notify_news_high_relevance,
+        )
+        sent_news = notify_news_high_relevance(state.get("news_feed") or [])
+        debates_today_iso = as_of.isoformat()
+        sent_debates = 0
+        for ticker, debate in (state.get("debates_by_asset") or {}).items():
+            if not isinstance(debate, dict):
+                continue
+            ts = debate.get("timestamp", "")
+            if not ts.startswith(debates_today_iso):
+                continue
+            if notify_debate_verdict(
+                ticker,
+                debate.get("verdict", "thesis_neutral"),
+                debate.get("suggested_action", "—"),
+                debate.get("trigger_reason", "unknown"),
+            ):
+                sent_debates += 1
+        if sent_news or sent_debates:
+            print(
+                f"  Notifications dispatched: {sent_news} news, "
+                f"{sent_debates} debate"
+            )
+    except Exception as exc:  # noqa: BLE001 — notifications must never crash cerebro
+        print(f"  Notifications hook skipped (non-fatal): {exc}")
+
     print(f"cerebro state written to {args.out}")
     print(
         f"  NAV real: EUR {state['portfolio_real']['nav_total_eur']:,.2f}"
