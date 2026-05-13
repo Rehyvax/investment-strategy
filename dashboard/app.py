@@ -6,9 +6,15 @@ additional files in `pages/` (Streamlit auto-discovers them).
 
 from __future__ import annotations
 
-import streamlit as st
+import sys
+from pathlib import Path
 
-from auth import check_auth
+sys.path.append(str(Path(__file__).resolve().parent))
+
+import streamlit as st  # noqa: E402
+
+from auth import check_auth  # noqa: E402
+from styles import inject_css  # noqa: E402
 
 st.set_page_config(
     page_title="Investment Dashboard",
@@ -17,14 +23,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+inject_css()
+
 if not check_auth():
     st.stop()
 
-st.sidebar.title("Investment Lab")
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Selecciona pantalla**")
-st.sidebar.caption("Las pantallas están en el menú lateral arriba.")
-st.sidebar.markdown("---")
+st.sidebar.markdown(
+    "<div style='font-weight:600; font-size:1rem; color:#0F172A;"
+    " padding:0.5rem 0;'>Investment Lab</div>",
+    unsafe_allow_html=True,
+)
+st.sidebar.caption("Pantallas en el menú lateral")
+st.sidebar.markdown(
+    "<div style='margin-top:1rem'></div>", unsafe_allow_html=True
+)
 st.sidebar.button(
     "Iniciar evaluación",
     help="Regenera state del cerebro on-demand (cuesta tokens API). "
@@ -33,5 +45,4 @@ st.sidebar.button(
 )
 st.sidebar.caption("Última evaluación: ver Home → header")
 
-# Redirect to the home page so opening / lands directly on Pantalla 1.
 st.switch_page("pages/1_Home.py")

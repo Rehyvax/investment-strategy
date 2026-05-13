@@ -1,4 +1,4 @@
-"""Smoke tests for Home Cockpit components.
+"""Smoke tests for Home Cockpit components (institutional UI).
 
 Each component is rendered against a minimal inline fixture inside the
 runner closure; AppTest.from_function lifts the runner's source into a
@@ -13,6 +13,12 @@ from pathlib import Path
 DASHBOARD_ROOT = Path(__file__).resolve().parents[1]
 if str(DASHBOARD_ROOT) not in sys.path:
     sys.path.insert(0, str(DASHBOARD_ROOT))
+
+
+def _all_markdown_text(at) -> str:
+    """Concatenate every markdown payload rendered by the runner so tests
+    can grep across both plain markdown and unsafe-HTML strings."""
+    return "\n".join(m.value for m in at.markdown if m.value)
 
 
 def test_market_status_renders():
@@ -36,8 +42,10 @@ def test_market_status_renders():
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
-    subheaders = [s.value for s in at.subheader]
-    assert any("Estado del mercado" in s for s in subheaders)
+    text = _all_markdown_text(at)
+    assert "Estado del Mercado" in text
+    assert "Risk-On Moderado" in text
+    assert "Flujo de capital" in text
 
 
 def test_portfolio_summary_renders():
@@ -66,7 +74,8 @@ def test_portfolio_summary_renders():
     at.run()
     assert not at.exception
     metric_labels = [m.label for m in at.metric]
-    assert "NAV total" in metric_labels
+    assert "NAV Total" in metric_labels
+    assert "Posiciones activas" in metric_labels
 
 
 def test_tax_alerts_renders():
@@ -89,8 +98,10 @@ def test_tax_alerts_renders():
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
-    warnings = [w.value for w in at.warning]
-    assert any("MELI" in w for w in warnings)
+    text = _all_markdown_text(at)
+    assert "Alertas Fiscales" in text
+    assert "MELI" in text
+    assert "Test alert" in text
 
 
 def test_chart_renders_with_default_visible():
@@ -121,10 +132,12 @@ def test_chart_renders_with_default_visible():
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
+    text = _all_markdown_text(at)
+    assert "Performance Comparativo" in text
 
 
 def test_recommendations_top_3_only():
-    """Even if 5 recommendations are passed, only 3 should be rendered."""
+    """Even if 5 recommendations are passed, only 3 cards should render."""
     from streamlit.testing.v1 import AppTest
 
     def runner():
@@ -148,10 +161,13 @@ def test_recommendations_top_3_only():
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
-    h3_count = sum(
-        1 for m in at.markdown if m.value.startswith("### ")
-    )
-    assert h3_count == 3
+    text = _all_markdown_text(at)
+    # Each card emits its own `institutional-card` block. We expect 3.
+    assert text.count("institutional-card") == 3
+    # And only the first 3 headlines should appear (Headline 0/1/2).
+    assert "Headline 0" in text
+    assert "Headline 2" in text
+    assert "Headline 3" not in text
 
 
 def test_comparative_renders():
@@ -163,18 +179,20 @@ def test_comparative_renders():
         render_comparative(
             {
                 "headline": "Headline test",
-                "narrative": "Narrative",
+                "narrative": "Narrative content",
                 "comparator_today": "shadow",
                 "comparator_reason": "Reason",
-                "action": "Action",
+                "action": "Action text",
             }
         )
 
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
-    successes = [s.value for s in at.success]
-    assert any("Action" in s for s in successes)
+    text = _all_markdown_text(at)
+    assert "Análisis Comparativo" in text
+    assert "Headline test" in text
+    assert "Action text" in text
 
 
 def test_news_feed_renders():
@@ -199,3 +217,5 @@ def test_news_feed_renders():
     at = AppTest.from_function(runner)
     at.run()
     assert not at.exception
+    text = _all_markdown_text(at)
+    assert "Noticias Relevantes" in text

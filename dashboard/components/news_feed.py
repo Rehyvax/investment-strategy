@@ -1,4 +1,4 @@
-"""Bloque F — News feed filtered by held assets."""
+"""Block F — News feed (institutional list, relevance badge)."""
 
 from __future__ import annotations
 
@@ -6,23 +6,43 @@ from datetime import datetime
 
 import streamlit as st
 
-RELEVANCE_ICON = {"high": "🔴", "medium": "🟡", "low": "⚪"}
+from styles import status_badge
+
+RELEVANCE_STATUS = {"high": "red", "medium": "yellow", "low": "neutral"}
 
 
 def render_news_feed(news: list[dict]) -> None:
-    st.subheader("Noticias relevantes")
+    st.markdown("<h2>Noticias Relevantes</h2>", unsafe_allow_html=True)
+
+    if not news:
+        st.info("Sin noticias materiales del día.")
+        return
 
     for item in news[:5]:
-        icon = RELEVANCE_ICON.get(item["relevance"], "⚪")
+        ts_raw = item["timestamp"].replace("Z", "+00:00")
+        try:
+            ts_str = datetime.fromisoformat(ts_raw).strftime("%Y-%m-%d %H:%M")
+        except ValueError:
+            ts_str = item["timestamp"]
+        relevance_badge = status_badge(
+            item["relevance"].upper(),
+            RELEVANCE_STATUS.get(item["relevance"], "neutral"),
+        )
+
         with st.expander(
-            f"{icon} **{item['asset']}** — {item['headline']}"
+            f"{item['asset']} — {item['headline']}", expanded=False
         ):
-            ts_raw = item["timestamp"].replace("Z", "+00:00")
-            try:
-                ts = datetime.fromisoformat(ts_raw)
-                st.caption(
-                    f"{item['source']} · {ts.strftime('%Y-%m-%d %H:%M')}"
-                )
-            except ValueError:
-                st.caption(item["source"])
-            st.markdown(f"[Leer artículo completo]({item['url']})")
+            st.markdown(
+                f"""
+                <div style="margin-bottom:8px;">
+                    {relevance_badge}
+                    <span style="font-size:0.75rem; color:#64748B; margin-left:8px;">
+                        {item['source']} · {ts_str}
+                    </span>
+                </div>
+                <a href="{item['url']}" target="_blank" style="color:#1E40AF; text-decoration:none; font-size:0.9375rem;">
+                    Leer artículo completo →
+                </a>
+                """,
+                unsafe_allow_html=True,
+            )
