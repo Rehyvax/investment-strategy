@@ -32,6 +32,8 @@ dependencies = [
     "fredapi>=0.5",              # macro series (yields, spreads, VIX proxies)
     "requests>=2.32,<3",
     "httpx>=0.27,<1",            # async / SEC EDGAR with custom UA
+    "feedparser>=6.0,<7",        # RSS parsing for news_scanner (Yahoo+Google)
+    "beautifulsoup4>=4.12,<5",   # HTML cleanup for news snippets when needed
 
     # Quant & risk
     "scikit-learn>=1.5,<2",
@@ -61,6 +63,11 @@ extra = [
     "matplotlib>=3.9,<4",        # ad-hoc plots in notebooks
     "seaborn>=0.13,<1",
 ]
+# Technical analyst: pandas-ta is convenient but currently requires
+# Python >= 3.12 (we're on 3.11) AND has known pandas 2.x compat
+# issues on Windows. Skipping it on purpose — `scripts/technical_analyst.py`
+# implements the same indicators (MA, RSI, MACD, Bollinger) directly on
+# numpy/pandas with no dependency on pandas-ta.
 
 dev = [
     "pytest>=8.2,<9",

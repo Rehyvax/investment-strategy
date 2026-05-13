@@ -127,7 +127,11 @@ scripts/*
 !scripts/llm_narratives.py
 !scripts/llm_chat.py
 !scripts/trade_ingest.py
+!scripts/news_scanner.py
+!scripts/technical_analyst.py
+!scripts/fundamentals_analyst.py
 !scripts/run_daily_cerebro.bat
+!scripts/run_daily_news_scanner.bat
 !scripts/install_daily_task.ps1
 
 # -----------------------------------------------------------------------------

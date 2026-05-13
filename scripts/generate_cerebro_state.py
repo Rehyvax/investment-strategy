@@ -37,6 +37,13 @@ from llm_narratives import (  # noqa: E402
     is_llm_available,
     refine_recommendation_narrative,
 )
+from news_scanner import get_recent_news_for_asset  # noqa: E402
+from technical_analyst import (  # noqa: E402
+    compute_all_technicals_for_portfolio,
+)
+from fundamentals_analyst import (  # noqa: E402
+    compute_all_fundamentals_for_portfolio,
+)
 
 
 def _load_env_file() -> None:
@@ -903,10 +910,50 @@ def generate_comparative(as_of: date) -> dict[str, Any]:
 
 
 # ----------------------------------------------------------------------
-# Block F — News feed (empty until news-scanner is operational)
+# Block F — News, technicals, fundamentals (Fase 3A/B/C analyst inputs)
 # ----------------------------------------------------------------------
-def generate_news_feed(as_of: date) -> list[dict[str, Any]]:
-    return []
+def generate_news_by_asset(
+    as_of: date, *, lookback_days: int = 7, min_relevance: str = "medium"
+) -> dict[str, list[dict[str, Any]]]:
+    """Per-ticker news for every position in the latest real snapshot.
+    Pulled from data/events/news/{YYYY-MM}.jsonl, filtered by relevance."""
+    snap = _load_snapshot("real", as_of)
+    if snap is None:
+        return {}
+    out: dict[str, list[dict[str, Any]]] = {}
+    for pos in snap.get("positions", []) or []:
+        ticker = pos.get("ticker")
+        if not isinstance(ticker, str) or not ticker:
+            continue
+        items = get_recent_news_for_asset(
+            ticker,
+            lookback_days=lookback_days,
+            min_relevance=min_relevance,
+            as_of=as_of,
+        )
+        if items:
+            out[ticker] = items
+    return out
+
+
+def generate_news_feed(
+    news_by_asset: dict[str, list[dict[str, Any]]],
+    *,
+    max_items: int = 10,
+) -> list[dict[str, Any]]:
+    """Global feed: top N high-relevance items across all assets, sorted
+    by timestamp descending. Each item is annotated with `asset` so the
+    Pantalla 1 component can render without the per-ticker map."""
+    items: list[dict[str, Any]] = []
+    for ticker, lst in news_by_asset.items():
+        for n in lst:
+            if n.get("relevance") != "high":
+                continue
+            enriched = dict(n)
+            enriched.setdefault("asset", ticker)
+            items.append(enriched)
+    items.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    return items[:max_items]
 
 
 # ----------------------------------------------------------------------
@@ -1135,6 +1182,16 @@ def generate_upcoming_events_by_asset(
 # ----------------------------------------------------------------------
 def generate_cerebro_state(as_of: date) -> dict[str, Any]:
     next_eval = datetime.now(timezone.utc) + timedelta(hours=24)
+    # Analyst inputs (Fase 3A/B/C). News reads JSONL only — no network.
+    # Technicals + fundamentals call yfinance for every position; this
+    # is the slow part of the run (typically ~30-60s for 19 tickers).
+    news_by_asset = generate_news_by_asset(as_of)
+    technicals_by_asset = compute_all_technicals_for_portfolio(
+        as_of_date=as_of, portfolio_id="real"
+    )
+    fundamentals_by_asset = compute_all_fundamentals_for_portfolio(
+        portfolio_id="real"
+    )
     return {
         "generated_at": _now_iso_utc(),
         "next_evaluation": next_eval.isoformat().replace("+00:00", "Z"),
@@ -1145,7 +1202,10 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
         "portfolios_chart_data": generate_portfolios_chart_data(as_of),
         "recommendations": generate_recommendations(as_of),
         "comparative_analysis": generate_comparative(as_of),
-        "news_feed": generate_news_feed(as_of),
+        "news_by_asset": news_by_asset,
+        "news_feed": generate_news_feed(news_by_asset),
+        "technicals_by_asset": technicals_by_asset,
+        "fundamentals_by_asset": fundamentals_by_asset,
         "upcoming_events_by_asset": generate_upcoming_events_by_asset(as_of),
     }
 
@@ -1183,6 +1243,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  Recommendations: {len(state['recommendations'])}")
     print(f"  Tax alerts: {len(state['tax_alerts'])}")
     print(f"  Portfolios in chart: {len(state['portfolios_chart_data']['series'])}")
+    print(
+        f"  News by asset: {len(state['news_by_asset'])} tickers, "
+        f"{len(state['news_feed'])} high-relevance in feed"
+    )
+    print(
+        f"  Technicals by asset: {len(state['technicals_by_asset'])} tickers"
+    )
+    print(
+        f"  Fundamentals by asset: {len(state['fundamentals_by_asset'])} tickers"
+    )
     return 0
 
 

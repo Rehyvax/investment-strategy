@@ -329,9 +329,25 @@ if len(all_thesis_versions) > 1:
     )
 
 # ----------------------------------------------------------------------
-# Block C — Opinión LLM matizada (session-cached)
+# Block C — Opinión LLM matizada (session-cached, 4 analyst inputs)
 # ----------------------------------------------------------------------
 st.markdown("<h2>Opinión del Cerebro</h2>", unsafe_allow_html=True)
+
+# Cerebro state used by Bloques C, D, E and F.
+try:
+    cerebro_state = load_cerebro_state()
+except Exception:
+    cerebro_state = {}
+
+asset_technicals = (
+    cerebro_state.get("technicals_by_asset", {}) or {}
+).get(selected, {})
+asset_fundamentals = (
+    cerebro_state.get("fundamentals_by_asset", {}) or {}
+).get(selected, {})
+asset_news = (
+    cerebro_state.get("news_by_asset", {}) or {}
+).get(selected, [])
 
 if position and authoritative_thesis:
     falsifiers = thesis_reader.get_falsifier_status(
@@ -348,10 +364,18 @@ if position and authoritative_thesis:
             authoritative_thesis.get("confidence_justification", "")[:300]
         )
 
+    # Cache key includes a hash of the analyst inputs so that a new
+    # cerebro regeneration invalidates the cached opinion automatically.
+    inputs_signature = (
+        f"t{asset_technicals.get('as_of_date', '')}"
+        f"_f{asset_fundamentals.get('as_of_date', '')}"
+        f"_n{len(asset_news)}"
+    )
     cache_key = (
         f"opinion_{selected}_"
         f"{authoritative_thesis.get('ts', '')[:10]}_"
-        f"{int(position.get('current_value_eur', 0) or 0)}"
+        f"{int(position.get('current_value_eur', 0) or 0)}_"
+        f"{inputs_signature}"
     )
     if cache_key not in st.session_state:
         if is_llm_available():
@@ -361,6 +385,9 @@ if position and authoritative_thesis:
                     latest_thesis or authoritative_thesis,
                     falsifiers,
                     additional,
+                    technicals=asset_technicals or None,
+                    fundamentals=asset_fundamentals or None,
+                    news=asset_news or None,
                 )
         else:
             st.session_state[cache_key] = None
@@ -398,9 +425,29 @@ else:
     st.info("Sin opinión: se necesita posición + tesis.")
 
 # ----------------------------------------------------------------------
-# Block D — Datos clave
+# Block D — Datos clave (position + fundamentals + technicals)
 # ----------------------------------------------------------------------
 st.markdown("<h2>Datos Clave</h2>", unsafe_allow_html=True)
+
+
+def _fmt_metric_pct(v: float | int | None) -> str:
+    if v is None:
+        return "N/A"
+    try:
+        return f"{float(v) * 100:+.1f}%"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def _fmt_metric_num(v: float | int | None, fmt: str = "{:.1f}") -> str:
+    if v is None:
+        return "N/A"
+    try:
+        return fmt.format(float(v))
+    except (TypeError, ValueError):
+        return "N/A"
+
+
 if position:
     quantity = float(position.get("quantity", 0.0) or 0.0)
     cost_basis_native = float(position.get("cost_basis_native", 0.0) or 0.0)
@@ -413,43 +460,130 @@ if position:
     c2.metric("Cost basis / und", f"{cb_per_unit:.2f} {currency}")
     c3.metric("Unidades", f"{quantity:.4f}")
     c4.metric("% NAV", f"{weight_pct:.2f}%")
-    st.caption(
-        "Fundamentals (P/E, ROIC, márgenes, FCF) requieren integración "
-        "fundamental-analyst en Fase 3."
-    )
 else:
     st.caption(f"Sin posición activa de {selected}.")
 
+# Fundamentals row
+if asset_fundamentals:
+    st.markdown(
+        "<div style='margin-top:18px;'><span style='font-size:0.75rem; "
+        "color:#64748B; font-weight:600; text-transform:uppercase; "
+        "letter-spacing:0.05em;'>Fundamentals (yfinance)</span></div>",
+        unsafe_allow_html=True,
+    )
+    f1, f2, f3, f4 = st.columns(4)
+    f1.metric("P/E (trailing)", _fmt_metric_num(asset_fundamentals.get("pe_ratio"), "{:.1f}"))
+    f1.metric("P/E (forward)", _fmt_metric_num(asset_fundamentals.get("forward_pe"), "{:.1f}"))
+    f2.metric("Op margin", _fmt_metric_pct(asset_fundamentals.get("operating_margin")))
+    f2.metric("Revenue growth", _fmt_metric_pct(asset_fundamentals.get("revenue_growth")))
+    f3.metric("Debt/Equity", _fmt_metric_num(asset_fundamentals.get("debt_to_equity"), "{:.1f}"))
+    f3.metric("Current ratio", _fmt_metric_num(asset_fundamentals.get("current_ratio"), "{:.2f}"))
+    target_price = asset_fundamentals.get("target_mean_price")
+    target_str = (
+        f"${target_price:.2f}" if isinstance(target_price, (int, float))
+        else "N/A"
+    )
+    f4.metric("Analyst target", target_str)
+    f4.metric(
+        "Consensus", asset_fundamentals.get("recommendation_key", "N/A") or "N/A"
+    )
+
+    flags = asset_fundamentals.get("flags") or []
+    if flags:
+        flag_html = " ".join(
+            status_badge(f.upper().replace("_", " "), "yellow") for f in flags
+        )
+        st.markdown(
+            f"<div style='margin-top:10px;'>Red flags: {flag_html}</div>",
+            unsafe_allow_html=True,
+        )
+
+# Technicals row
+if asset_technicals:
+    st.markdown(
+        "<div style='margin-top:18px;'><span style='font-size:0.75rem; "
+        "color:#64748B; font-weight:600; text-transform:uppercase; "
+        "letter-spacing:0.05em;'>Technicals</span></div>",
+        unsafe_allow_html=True,
+    )
+    t1, t2, t3, t4 = st.columns(4)
+    t1.metric(
+        "RSI(14)",
+        _fmt_metric_num(asset_technicals.get("rsi14"), "{:.1f}"),
+        asset_technicals.get("rsi_signal", "").replace("_", " ") or None,
+    )
+    t2.metric(
+        "Trend",
+        (asset_technicals.get("trend") or "N/A").replace("_", " "),
+    )
+    t3.metric(
+        "MACD signal",
+        (asset_technicals.get("macd_signal") or "N/A").replace("_", " "),
+    )
+    t4.metric(
+        "BB position",
+        (asset_technicals.get("bb_position") or "N/A").replace("_", " "),
+    )
+
+if not asset_fundamentals and not asset_technicals:
+    st.caption(
+        "Fundamentals/technicals todavía no calculados. Ejecuta "
+        "`python scripts/generate_cerebro_state.py` para refrescar."
+    )
+
 # ----------------------------------------------------------------------
-# Block E — Noticias placeholder
+# Block E — Noticias relevantes (per-asset, populated by news_scanner)
 # ----------------------------------------------------------------------
 st.markdown("<h2>Noticias Relevantes</h2>", unsafe_allow_html=True)
-st.markdown(
-    f"""
-    <div class="institutional-card" style="background:#F8FAFC;">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-            {status_badge("PENDIENTE", "neutral")}
-            <span style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em;">News-scanner integration en Fase 3</span>
-        </div>
-        <p style="margin:0; color:#475569; line-height:1.6; font-size:0.9375rem;">
-        News-scanner automático para {selected} pendiente de integración.
-        Filtrará últimos 7 días por relevancia material.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+
+RELEVANCE_BADGE_COLORS = {"high": "red", "medium": "yellow", "low": "neutral"}
+
+if asset_news:
+    news_rows: list[str] = []
+    for n in asset_news[:5]:
+        relevance = (n.get("relevance") or "low").lower()
+        rbadge = status_badge(
+            relevance.upper(),
+            RELEVANCE_BADGE_COLORS.get(relevance, "neutral"),
+        )
+        category = (n.get("category") or "other").replace("_", " ")
+        source = n.get("source", "")
+        ts_str = n.get("timestamp", "")[:16]
+        summary = n.get("summary_1line") or n.get("headline", "")
+        url = n.get("url", "#")
+        link = (
+            f"<a href='{url}' target='_blank' style='color:#1E40AF; "
+            f"text-decoration:none; font-size:0.875rem;'>Leer →</a>"
+            if url and url != "#" else ""
+        )
+        news_rows.append(
+            f"""
+            <div style="padding:10px 0; border-bottom:1px solid #F1F5F9;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+                    {rbadge}
+                    <span style='font-size:0.75rem; color:#64748B;'>{category} · {source} · {ts_str}</span>
+                </div>
+                <div style='color:#0F172A; line-height:1.5; font-size:0.9375rem;'>{summary}</div>
+                <div style='margin-top:4px;'>{link}</div>
+            </div>
+            """
+        )
+    st.markdown(
+        '<div class="institutional-card">' + "".join(news_rows) + "</div>",
+        unsafe_allow_html=True,
+    )
+else:
+    st.caption(
+        f"Sin noticias materiales recientes para {selected} "
+        "(últimos 7 días, relevance ≥ medium)."
+    )
 
 # ----------------------------------------------------------------------
 # Block F — Eventos próximos (DINÁMICOS desde cerebro state)
 # ----------------------------------------------------------------------
 st.markdown("<h2>Eventos Próximos</h2>", unsafe_allow_html=True)
 
-try:
-    cerebro_state = load_cerebro_state()
-except Exception:
-    cerebro_state = {}
-
+# `cerebro_state` was loaded once at the top of Bloque C.
 cerebro_events_by_asset = cerebro_state.get("upcoming_events_by_asset", {}) or {}
 events = cerebro_events_by_asset.get(selected, [])
 
@@ -493,9 +627,9 @@ if col1.button(
     "Registrar trade manual",
     use_container_width=True,
     type="secondary",
-    help="Pantalla 7 Trades pendiente Fase 3.",
+    help="Abre Pantalla 7 — Operaciones (registro manual).",
 ):
-    st.info("Pantalla 7 Trades pendiente de implementación.")
+    st.switch_page("pages/7_Trades.py")
 
 ask_clicked = col2.button(
     "Preguntar al cerebro",

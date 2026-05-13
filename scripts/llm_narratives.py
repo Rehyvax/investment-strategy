@@ -48,6 +48,11 @@ def _get_client():
         return None
 
 
+# Public alias — analyst-side scripts (news_scanner, etc.) consume this
+# instead of the underscore-prefixed name.
+get_client = _get_client
+
+
 def _classify_vix(vix: float | None) -> str:
     if vix is None:
         return "unknown"
@@ -223,7 +228,7 @@ Responde solo con el narrative, sin preámbulo."""
 
 
 # ----------------------------------------------------------------------
-# Position opinion (drill-down per ticker)
+# Position opinion (drill-down per ticker, enriched with 4 analyst inputs)
 # ----------------------------------------------------------------------
 POSITION_OPINION_PROMPT = """Eres un asesor de inversiones con tono institucional sobrio.
 
@@ -242,21 +247,92 @@ Tesis vigente ({thesis_version}):
 Falsifiers ({n_falsifiers} en total):
 {falsifiers_text}
 
+Technicals:
+- Trend: {trend}
+- RSI(14): {rsi14} ({rsi_signal})
+- MACD: {macd_signal}
+- Bollinger: {bb_position}
+- Precio vs MA50: {price_vs_ma50}
+- Precio vs MA200: {price_vs_ma200}
+
+Fundamentals:
+- P/E trailing: {pe_ratio} | forward: {forward_pe}
+- Operating margin: {operating_margin}
+- Revenue growth y/y: {revenue_growth}
+- Debt/Equity: {debt_to_equity}
+- Sector: {sector}
+- Analyst target: {target_price_str} (consenso: {recommendation_key})
+- Red flags: {flags}
+
+Noticias recientes ({n_news} items relevantes últimos 7 días):
+{news_text}
+
 Contexto adicional:
 {additional_context}
 
-Genera análisis honesto matizado en 4-6 frases:
-1. Cómo está la posición HOY (si hay matiz: "1 falsifier rojo entre 3 verdes" → explícitalo).
-2. Por qué la opinión actual. Comprométete con UNA dirección.
-3. Acción concreta (cantidad si aplica) o "no toques nada".
-4. Si override usuario activo: respeta la decisión y recuerda los riesgos.
+Genera análisis honesto MATIZADO en 5-7 frases que integre los 4 inputs (tesis + technicals + fundamentals + news):
+1. Cómo está la posición HOY combinando los 4 inputs.
+2. Cuál input pesa más en tu juicio y POR QUÉ.
+3. Por qué la opinión actual. Comprométete con UNA dirección.
+4. Acción concreta (cantidad si aplica) o "no toques nada".
+5. Si análisis matizado (e.g. fundamentals fuertes pero technicals bearish): explícalo en formato "sigue aguantando porque X aunque Y".
 
 Reglas estrictas:
-- NO emojis. NO scores numéricos ("82% confianza"). NO menús ("considerar A o B").
-- Si la tesis está intacta y la posición saludable: "no toques nada".
-- Si un falsifier está halfway: cita la próxima fecha de check.
+- NO emojis. NO scores numéricos. NO menús ("considerar A o B").
+- COMPROMÉTETE con UNA opinión.
+- Si tesis intacta + technicals neutros + sin news material: di "no toques nada".
+- Si conflicto real entre inputs: explícalo en una sola frase.
+- Si override usuario activo: respeta la decisión, recuerda los riesgos.
 
 Responde solo con el análisis, sin preámbulo."""
+
+
+def _format_falsifiers(falsifiers: list[dict[str, Any]]) -> str:
+    status_icon = {
+        "inactive": "OK",
+        "halfway_activated": "MITAD",
+        "activated": "ACTIVO",
+        "active": "ACTIVO",
+    }
+    lines: list[str] = []
+    for f in (falsifiers or [])[:5]:
+        icon = status_icon.get(f.get("status", "unknown"), "?")
+        name = f.get("name", "?")
+        cur = f.get("current") or ""
+        cur_str = f" (actual: {cur})" if cur else ""
+        lines.append(
+            f"  [{icon}] {name}: {f.get('status', 'unknown')}{cur_str}"
+        )
+    return "\n".join(lines) if lines else "Sin falsifiers definidos"
+
+
+def _format_news(news: list[dict[str, Any]] | None) -> str:
+    if not news:
+        return "Sin noticias materiales recientes"
+    lines: list[str] = []
+    for n in news[:5]:
+        relevance = (n.get("relevance") or "low").upper()
+        summary = n.get("summary_1line") or (n.get("headline") or "")[:80]
+        lines.append(f"  [{relevance}] {summary}")
+    return "\n".join(lines)
+
+
+def _fmt_pct(value: Any) -> str:
+    if value is None:
+        return "N/A"
+    try:
+        return f"{float(value) * 100:+.1f}%"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
+def _fmt_num(value: Any, fmt: str = "{:.2f}") -> str:
+    if value is None:
+        return "N/A"
+    try:
+        return fmt.format(float(value))
+    except (TypeError, ValueError):
+        return "N/A"
 
 
 def generate_position_opinion(
@@ -264,28 +340,21 @@ def generate_position_opinion(
     thesis: dict[str, Any],
     falsifiers: list[dict[str, Any]],
     additional_context: str = "",
+    *,
+    technicals: dict[str, Any] | None = None,
+    fundamentals: dict[str, Any] | None = None,
+    news: list[dict[str, Any]] | None = None,
 ) -> str | None:
-    """LLM opinion on a single position drilled-down from Pantalla 3."""
+    """LLM opinion on a single position. The four optional kwargs
+    (`technicals`, `fundamentals`, `news`, `additional_context`) are the
+    Fase 3A/B/C analyst inputs — when present, the prompt asks for a
+    nuanced multi-input analysis; when absent, the prompt still works
+    but degenerates to the original tesis-only narrative."""
     client = _get_client()
     if client is None:
         return None
     try:
-        lines: list[str] = []
-        status_icon = {
-            "inactive": "OK",
-            "halfway_activated": "MITAD",
-            "activated": "ACTIVO",
-            "active": "ACTIVO",
-        }
-        for f in falsifiers[:5]:
-            icon = status_icon.get(f.get("status", "unknown"), "?")
-            name = f.get("name", "?")
-            cur = f.get("current") or ""
-            cur_str = f" (actual: {cur})" if cur else ""
-            lines.append(f"  [{icon}] {name}: {f.get('status', 'unknown')}{cur_str}")
-        falsifiers_text = (
-            "\n".join(lines) if lines else "Sin falsifiers definidos"
-        )
+        falsifiers_text = _format_falsifiers(falsifiers)
 
         cost_basis_native = float(position.get("cost_basis_native") or 0.0)
         quantity = float(position.get("quantity") or 0.0)
@@ -315,6 +384,44 @@ def generate_position_opinion(
             or "—"
         )[:500]
 
+        # ---- Technicals (defaults preserve prompt structure when absent)
+        tech = technicals or {}
+        trend = tech.get("trend", "unknown")
+        rsi14 = tech.get("rsi14", "N/A")
+        rsi_signal = tech.get("rsi_signal", "unknown")
+        macd_signal = tech.get("macd_signal", "unknown")
+        bb_position = tech.get("bb_position", "unknown")
+        ma50_v = tech.get("ma50")
+        ma200_v = tech.get("ma200")
+        price_t = tech.get("price")
+        price_vs_ma50 = (
+            f"{((price_t - ma50_v) / ma50_v * 100):+.1f}%"
+            if ma50_v and price_t
+            else "N/A"
+        )
+        price_vs_ma200 = (
+            f"{((price_t - ma200_v) / ma200_v * 100):+.1f}%"
+            if ma200_v and price_t
+            else "N/A"
+        )
+
+        # ---- Fundamentals
+        fund = fundamentals or {}
+        pe_str = _fmt_num(fund.get("pe_ratio"), "{:.1f}")
+        forward_pe_str = _fmt_num(fund.get("forward_pe"), "{:.1f}")
+        op_margin_str = _fmt_pct(fund.get("operating_margin"))
+        rev_growth_str = _fmt_pct(fund.get("revenue_growth"))
+        de_str = _fmt_num(fund.get("debt_to_equity"), "{:.1f}")
+        sector = fund.get("sector") or "N/A"
+        target_price = fund.get("target_mean_price")
+        target_price_str = (
+            f"${target_price:.2f}" if isinstance(target_price, (int, float))
+            else "N/A"
+        )
+        rec_key = fund.get("recommendation_key") or "N/A"
+        flags_list = fund.get("flags") or []
+        flags_str = ", ".join(flags_list) if flags_list else "ninguna"
+
         prompt = POSITION_OPINION_PROMPT.format(
             asset=position.get("ticker", "—"),
             weight_pct=weight_pct,
@@ -332,8 +439,26 @@ def generate_position_opinion(
             ),
             confidence=thesis.get("confidence_calibrated", "—"),
             thesis_summary=thesis_summary,
-            n_falsifiers=len(falsifiers),
+            n_falsifiers=len(falsifiers or []),
             falsifiers_text=falsifiers_text,
+            trend=trend,
+            rsi14=rsi14,
+            rsi_signal=rsi_signal,
+            macd_signal=macd_signal,
+            bb_position=bb_position,
+            price_vs_ma50=price_vs_ma50,
+            price_vs_ma200=price_vs_ma200,
+            pe_ratio=pe_str,
+            forward_pe=forward_pe_str,
+            operating_margin=op_margin_str,
+            revenue_growth=rev_growth_str,
+            debt_to_equity=de_str,
+            sector=sector,
+            target_price_str=target_price_str,
+            recommendation_key=rec_key,
+            flags=flags_str,
+            n_news=len(news or []),
+            news_text=_format_news(news),
             additional_context=(
                 additional_context[:500]
                 if additional_context
