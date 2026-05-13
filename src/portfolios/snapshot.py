@@ -198,6 +198,8 @@ class SnapshotRebuilder:
         dry_run: bool = False,
         runs_path: Path | None = None,
         trades_dir: Path | None = None,
+        price_log=None,  # PriceLog instance; lazy-imported when None
+        use_yfinance_fallback: bool = True,
     ):
         self.portfolio_id = portfolio_id
         self.as_of_date = as_of_date
@@ -207,6 +209,15 @@ class SnapshotRebuilder:
         self.out_dir = out_dir or (SNAPSHOTS_DIR / portfolio_id)
         self._price_cache: dict[tuple[str, str], float] = {}
         self._fx_cache: dict[tuple[str, str], float] = {}
+        self._price_log = price_log
+        self.use_yfinance_fallback = use_yfinance_fallback
+
+    def _get_price_log(self):
+        if self._price_log is None:
+            from src.portfolios.price_log import PriceLog
+
+            self._price_log = PriceLog()
+        return self._price_log
 
     # ------------------------------------------------------------------
     # Supersession pre-pass
@@ -411,50 +422,30 @@ class SnapshotRebuilder:
     def _get_eod_price(
         self, ticker: str, yf_symbol: str | None, as_of: date
     ) -> float | None:
-        symbol = yf_symbol or ticker
-        key = (symbol, as_of.isoformat())
+        """Look up EOD price for ticker. Consults the local price log
+        (data/events/prices/YYYY-MM.jsonl) first; falls back to yfinance
+        live only when log is missing the (ticker, date) AND
+        use_yfinance_fallback is True. Price log is the authoritative
+        source per CLAUDE.md §2.2.1 (deterministic point-in-time)."""
+        key = (ticker, as_of.isoformat())
         if key in self._price_cache:
             return self._price_cache[key]
+        pl = self._get_price_log()
+        rec = pl.get_price(ticker, as_of)
+        if rec is not None:
+            self._price_cache[key] = rec.close
+            return rec.close
+        if not self.use_yfinance_fallback:
+            return None
+        # Fallback: yfinance live. Kept as Stage 2 protection; production
+        # paths should rely on a fully backfilled log.
+        symbol = yf_symbol or ticker
         try:
             import yfinance as yf  # local import: heavy dep
         except ImportError:
             return None
         try:
             t = yf.Ticker(symbol)
-            # Pull a small window around as_of_date to be tolerant of weekends/holidays.
-            start = as_of.toordinal() - 5
-            from datetime import date as _date
-
-            start_date = _date.fromordinal(start)
-            end_date = _date.fromordinal(as_of.toordinal() + 1)
-            hist = t.history(
-                start=start_date.isoformat(),
-                end=end_date.isoformat(),
-                auto_adjust=True,
-            )
-            if hist.empty:
-                return None
-            # Pick the row whose date <= as_of, latest.
-            dates = [d.date() for d in hist.index]
-            valid = [(d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of]
-            if not valid:
-                return None
-            price = float(valid[-1][1])
-            self._price_cache[key] = price
-            return price
-        except Exception:
-            return None
-
-    def _get_fx_usd_per_eur(self, as_of: date) -> float | None:
-        key = ("EURUSD=X", as_of.isoformat())
-        if key in self._fx_cache:
-            return self._fx_cache[key]
-        try:
-            import yfinance as yf
-        except ImportError:
-            return None
-        try:
-            t = yf.Ticker("EURUSD=X")
             from datetime import date as _date
 
             start_date = _date.fromordinal(as_of.toordinal() - 5)
@@ -467,32 +458,36 @@ class SnapshotRebuilder:
             if hist.empty:
                 return None
             dates = [d.date() for d in hist.index]
-            valid = [(d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of]
+            valid = [
+                (d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of
+            ]
             if not valid:
                 return None
-            fx = float(valid[-1][1])
-            self._fx_cache[key] = fx
-            return fx
+            price = float(valid[-1][1])
+            self._price_cache[key] = price
+            return price
         except Exception:
             return None
 
-    def _get_fx_pair(self, pair: str, as_of: date) -> float | None:
-        # pair example: "GBPEUR=X", "DKKEUR=X". Returns units of EUR per 1 unit of native.
-        # We'll fetch native/EUR rate via yfinance ticker "<NATIVE>EUR=X" which gives EUR per native.
-        key = (pair, as_of.isoformat())
+    def _get_fx_usd_per_eur(self, as_of: date) -> float | None:
+        """Backward-compat helper used in result header; reads log first."""
+        pl = self._get_price_log()
+        rec = pl.get_fx("USD", as_of)
+        if rec is not None:
+            return rec.native_per_eur
+        if not self.use_yfinance_fallback:
+            return None
+        key = ("EURUSD=X", as_of.isoformat())
         if key in self._fx_cache:
             return self._fx_cache[key]
         try:
             import yfinance as yf
-        except ImportError:
-            return None
-        try:
-            t = yf.Ticker(pair)
+
             from datetime import date as _date
 
-            start_date = _date.fromordinal(as_of.toordinal() - 7)
+            start_date = _date.fromordinal(as_of.toordinal() - 5)
             end_date = _date.fromordinal(as_of.toordinal() + 1)
-            hist = t.history(
+            hist = yf.Ticker("EURUSD=X").history(
                 start=start_date.isoformat(),
                 end=end_date.isoformat(),
                 auto_adjust=False,
@@ -500,7 +495,9 @@ class SnapshotRebuilder:
             if hist.empty:
                 return None
             dates = [d.date() for d in hist.index]
-            valid = [(d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of]
+            valid = [
+                (d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of
+            ]
             if not valid:
                 return None
             fx = float(valid[-1][1])
@@ -510,18 +507,51 @@ class SnapshotRebuilder:
             return None
 
     def _native_to_eur(self, currency: str, as_of: date) -> float | None:
-        """Returns EUR per 1 unit of <currency>. None if unknown."""
+        """Returns EUR per 1 unit of <currency>. None if unknown.
+        Consults the price log; falls back to yfinance live."""
         if currency == "EUR":
             return 1.0
+        pl = self._get_price_log()
+        rec = pl.get_fx(currency, as_of)
+        if rec is not None and rec.native_per_eur > 0:
+            return 1.0 / rec.native_per_eur
+        if not self.use_yfinance_fallback:
+            return None
         if currency == "USD":
-            # Need USD->EUR. EURUSD=X gives USD per EUR; invert.
             usd_per_eur = self._get_fx_usd_per_eur(as_of)
             if usd_per_eur and usd_per_eur > 0:
                 return 1.0 / usd_per_eur
             return None
-        # Generic: try <CCY>EUR=X.
-        pair = f"{currency}EUR=X"
-        return self._get_fx_pair(pair, as_of)
+        # Generic fallback: yfinance EUR<CCY>=X gives CCY per EUR.
+        pair = f"EUR{currency}=X"
+        key = (pair, as_of.isoformat())
+        if key in self._fx_cache:
+            return self._fx_cache[key]
+        try:
+            import yfinance as yf
+
+            from datetime import date as _date
+
+            start_date = _date.fromordinal(as_of.toordinal() - 7)
+            end_date = _date.fromordinal(as_of.toordinal() + 1)
+            hist = yf.Ticker(pair).history(
+                start=start_date.isoformat(),
+                end=end_date.isoformat(),
+                auto_adjust=False,
+            )
+            if hist.empty:
+                return None
+            dates = [d.date() for d in hist.index]
+            valid = [
+                (d, hist.iloc[i]["Close"]) for i, d in enumerate(dates) if d <= as_of
+            ]
+            if not valid:
+                return None
+            native_per_eur = float(valid[-1][1])
+            self._fx_cache[key] = native_per_eur
+            return 1.0 / native_per_eur if native_per_eur > 0 else None
+        except Exception:
+            return None
 
     def _mark_to_market(self, positions: dict[str, Position]) -> None:
         for pos in positions.values():

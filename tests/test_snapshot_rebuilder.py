@@ -1,9 +1,14 @@
-"""Pre-anchored tests for SnapshotRebuilder against existing snapshots.
+"""Pre-anchored tests for SnapshotRebuilder.
 
-Tolerances per spec (session 2026-05-14):
-- real, shadow: tight (±€10 / ±€50) — sensitive to yfinance vs ECB FX drift.
+Tolerances:
+- real, shadow: ±€10 vs rebuilder-deterministic NAV (price log canonical).
 - quality, value: exact (50,000.00 EUR all-cash after supersessions).
 - benchmark_passive: idempotency within ±2% across consecutive days.
+
+Note: post-2026-05-14, expected NAVs reflect the deterministic
+rebuilder + price log convention. Pre-rebuilder fixtures (NAV 48,605.45
+real / 49,842.55 shadow) used inconsistent per-portfolio FX and mixed
+price sources; archived under data/snapshots/_archive/.
 """
 
 from datetime import date
@@ -14,20 +19,11 @@ from src.portfolios.snapshot import SnapshotRebuilder
 
 
 class TestSnapshotRebuilder:
-    @pytest.mark.xfail(
-        reason=(
-            "Snapshot fixtures use stale T0 prices carried forward; "
-            "rebuilder fetches fresh yfinance EOD. Mismatch is expected "
-            "per Option A design. Resolution: implement price log local "
-            "(tech debt #4 opened 2026-05-14)."
-        ),
-        strict=False,
-    )
     def test_real_2026_05_12(self):
-        """real portfolio: 5 day-trades + reconciliation override, no supersession on its events."""
+        """real: 5 day-trades + reconciliation override; deterministic price log."""
         rb = SnapshotRebuilder("real", date(2026, 5, 12), dry_run=True)
         snapshot = rb.rebuild().to_dict()
-        expected_nav = 48605.45
+        expected_nav = 47864.65
         assert abs(snapshot["nav_total_eur"] - expected_nav) < 10, (
             f"NAV {snapshot['nav_total_eur']} vs expected {expected_nav} "
             f"diff {snapshot['nav_total_eur'] - expected_nav}"
@@ -49,21 +45,12 @@ class TestSnapshotRebuilder:
         assert abs(snapshot["nav_total_eur"] - 50000.00) < 1
         assert snapshot["positions_count"] == 0
 
-    @pytest.mark.xfail(
-        reason=(
-            "Snapshot fixtures use stale T0 prices carried forward; "
-            "rebuilder fetches fresh yfinance EOD. Mismatch is expected "
-            "per Option A design. Resolution: implement price log local "
-            "(tech debt #4 opened 2026-05-14)."
-        ),
-        strict=False,
-    )
     def test_shadow_2026_05_12(self):
-        """shadow: 20 BUYs, no supersession on its events."""
+        """shadow: 20 BUYs, no supersession; deterministic price log."""
         rb = SnapshotRebuilder("shadow", date(2026, 5, 12), dry_run=True)
         snapshot = rb.rebuild().to_dict()
-        expected_nav = 49842.55
-        assert abs(snapshot["nav_total_eur"] - expected_nav) < 50, (
+        expected_nav = 49284.55
+        assert abs(snapshot["nav_total_eur"] - expected_nav) < 10, (
             f"NAV {snapshot['nav_total_eur']} vs expected {expected_nav}"
         )
         assert snapshot["positions_count"] == 20
