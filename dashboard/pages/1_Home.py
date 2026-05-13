@@ -50,6 +50,6 @@ if state.get("tax_alerts"):
     render_tax_alerts(state["tax_alerts"])
 
 render_chart(state["portfolios_chart_data"])
-render_recommendations(state["recommendations"])
+render_recommendations(state["recommendations"], state.get("portfolio_real", {}))
 render_comparative(state["comparative_analysis"])
 render_news_feed(state["news_feed"])

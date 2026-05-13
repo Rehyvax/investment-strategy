@@ -35,6 +35,7 @@ from llm_narratives import (  # noqa: E402
     generate_comparative_narrative,
     generate_market_state_narrative,
     is_llm_available,
+    refine_recommendation_narrative,
 )
 
 
@@ -691,6 +692,64 @@ def _recommendation_for(
 _PRIORITY_RANK = {"high": 0, "medium": 1, "low": 2}
 
 
+def _position_data_for(ticker: str, as_of: date) -> dict[str, Any]:
+    """Returns the position dict from the real snapshot for `ticker`,
+    or an empty dict if not held."""
+    snap = _load_snapshot("real", as_of)
+    if snap is None:
+        return {}
+    nav = float(snap.get("nav_total_eur", 0.0))
+    for p in snap.get("positions", []) or []:
+        if p.get("ticker") == ticker:
+            return {
+                **p,
+                "weight_pct": _position_weight(p, nav),
+            }
+    return {}
+
+
+def _llm_context_for(
+    ticker: str, rec: dict[str, Any]
+) -> str:
+    """Build a concise context string for the LLM refinement prompt."""
+    thesis, override = _load_thesis_chain(ticker)
+    parts: list[str] = []
+    if thesis:
+        rec_field = (
+            thesis.get("recommendation")
+            or thesis.get("recommendation_v2")
+            or "—"
+        )
+        conf = thesis.get("confidence_calibrated")
+        parts.append(f"Tesis: rec={rec_field}, conf={conf}")
+        catalysts = thesis.get("catalysts_upcoming", []) or []
+        if catalysts:
+            cat_str_parts: list[str] = []
+            for c in catalysts[:2]:
+                if isinstance(c, dict):
+                    txt = (
+                        c.get("description")
+                        or c.get("name")
+                        or c.get("event")
+                        or ""
+                    )
+                    d = c.get("expected_date") or c.get("date") or ""
+                    if txt or d:
+                        cat_str_parts.append(
+                            f"{txt} ({d})" if d else txt
+                        )
+                elif isinstance(c, str):
+                    cat_str_parts.append(c)
+            if cat_str_parts:
+                parts.append("Catalysts: " + "; ".join(cat_str_parts))
+    if override and override.get("user_override_active"):
+        note = override.get("note", "")
+        parts.append(
+            "Override usuario activo. " + (note[:300] if note else "")
+        )
+    return " | ".join(parts) if parts else "Sin contexto adicional."
+
+
 def generate_recommendations(as_of: date) -> list[dict[str, Any]]:
     if not THESES_DIR.exists():
         return []
@@ -700,17 +759,28 @@ def generate_recommendations(as_of: date) -> list[dict[str, Any]]:
         rec = _recommendation_for(ticker, as_of)
         if rec is not None:
             candidates.append(rec)
-    # Sort: priority first, then weight descending.
     candidates.sort(
         key=lambda r: (
             _PRIORITY_RANK.get(r["priority"], 99),
             -r.get("_weight_pct", 0.0),
         )
     )
-    # Strip internal keys before returning.
+
     out: list[dict[str, Any]] = []
+    llm_on = is_llm_available()
     for c in candidates[:3]:
         clean = {k: v for k, v in c.items() if not k.startswith("_")}
+        # Default tag — overwritten on LLM success.
+        clean["_narrative_source"] = "rule_based"
+        if llm_on:
+            position_data = _position_data_for(clean["asset"], as_of)
+            context = _llm_context_for(clean["asset"], clean)
+            llm_text = refine_recommendation_narrative(
+                clean, position_data, context
+            )
+            if llm_text:
+                clean["narrative"] = llm_text
+                clean["_narrative_source"] = "llm"
         out.append(clean)
     return out
 

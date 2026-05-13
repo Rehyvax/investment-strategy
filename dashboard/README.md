@@ -90,9 +90,57 @@ pytest dashboard/tests/ -v
 
 Uses `streamlit.testing.v1.AppTest` (smoke tests, no browser required).
 
-## Phase 2B (next)
+## Daily cron (Windows Task Scheduler)
 
-- **Pantalla 5** — Comparativa Portfolios (full ranking + delta toggles).
-- **Cerebro generator** — daily cron invoking Anthropic API to write
-  `data/cerebro_state.json` from snapshots + events.
-- **Chat ad-hoc** — per-recommendation "Preguntar más" wired to API.
+The cerebro can be regenerated automatically every weekday at 08:00 by
+the `Investment_Cerebro_Daily` scheduled task. Install once:
+
+```powershell
+# Open PowerShell as Administrator
+cd C:\Users\Lluis\Documents\investment-strategy
+powershell.exe -ExecutionPolicy Bypass -File scripts\install_daily_task.ps1
+```
+
+Verify:
+
+```powershell
+Get-ScheduledTask -TaskName Investment_Cerebro_Daily | Format-List *
+```
+
+Run manually (without waiting):
+
+```powershell
+Start-ScheduledTask -TaskName Investment_Cerebro_Daily
+```
+
+Remove:
+
+```powershell
+Unregister-ScheduledTask -TaskName Investment_Cerebro_Daily -Confirm:$false
+```
+
+Logs accumulate at `logs/cerebro_daily.log` (gitignored). Each run
+appends a `START` / `END` block with the exit code.
+
+## On-demand regeneration
+
+The sidebar exposes an **"Iniciar evaluación"** button that runs
+`scripts/generate_cerebro_state.py` as a subprocess. Use it after
+adding a position or to refresh narratives between cron runs. Cost is
+approximately USD 0.10 per evaluation.
+
+## Phase 2 status
+
+- Pantalla 1 — Home Cockpit. Done.
+- Pantalla 5 — Comparativa Portfolios. Done.
+- Cerebro generator + price log determinista. Done.
+- LLM narratives in market_state, comparative_analysis, recommendations. Done.
+- Chat ad-hoc per recommendation. Done.
+- Daily Windows cron. Done.
+
+## Phase 3 (next)
+
+- Pantalla 3 — Detalle de Posición (drill-down per ticker).
+- Pantalla 7 — Trades sync (Lightyear CSV ingest UI).
+- Performance Attribution Suite (Brinson-Fachler + factor regression)
+  unlocks at >=30 days of T0 history (~2026-06-12).

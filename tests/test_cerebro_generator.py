@@ -127,6 +127,16 @@ class TestRecommendations:
         if msft:
             assert msft[0]["type"] in ("HOLD", "WATCH")
 
+    def test_each_rec_has_narrative_source(self, monkeypatch):
+        """Every rec carries a `_narrative_source` tag so the dashboard
+        can show LLM vs DETERMINISTA. Scrub env so we exercise the
+        rule_based path without burning tokens."""
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        recs = gen.generate_recommendations(date(2026, 5, 14))
+        for rec in recs:
+            assert "_narrative_source" in rec
+            assert rec["_narrative_source"] in ("llm", "rule_based")
+
 
 # ---------------------------------------------------------------------
 # Chart data
