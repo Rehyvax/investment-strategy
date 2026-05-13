@@ -119,3 +119,17 @@ temp/
 
 # Scratch local (scripts operacionales con datos hardcoded)
 scripts/
+
+# -----------------------------------------------------------------------------
+# Dashboard secrets (Streamlit secret token store)
+# Template is committed; actual secrets stay local.
+# -----------------------------------------------------------------------------
+dashboard/.streamlit/secrets.toml
+
+# -----------------------------------------------------------------------------
+# Dashboard live cerebro state (holds personal NAV / positions)
+# The sanitized example is committed; the live file is not.
+# -----------------------------------------------------------------------------
+!dashboard/data/
+!dashboard/data/cerebro_state.example.json
+dashboard/data/cerebro_state.json

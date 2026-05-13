@@ -137,3 +137,9 @@ markers = [
     "slow: tests that hit network or run > 1s",
     "integration: end-to-end paper-portfolio simulations",
 ]
+
+[dependency-groups]
+dev = [
+    "plotly>=6.7.0",
+    "streamlit>=1.57.0",
+]

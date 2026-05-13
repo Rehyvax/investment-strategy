@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-05-14T18:00:00Z",
+  "next_evaluation": "2026-05-15T09:00:00Z",
+  "market_state": {
+    "regime": "risk_on_moderate",
+    "regime_color": "green",
+    "explanation": "Risk-on moderado. VIX en zona calmada, breadth de mercado saludable.",
+    "money_flow": "Tech lidera el mes. Defensivos rezagados. Capital fluyendo a cíclicos/growth.",
+    "fear_level": "low",
+    "vix": 14.3,
+    "bond_equity_ratio_30d": -0.12,
+    "fear_summary": "VIX bajo. Bond/Equity ratio cayendo: risk-on persiste."
+  },
+  "portfolio_real": {
+    "nav_total_eur": 50000.0,
+    "nav_delta_1d_pct": 0.0,
+    "nav_delta_1w_pct": 0.0,
+    "nav_delta_1m_pct": 0.0,
+    "nav_delta_ytd_pct": 0.0,
+    "health_status": "green",
+    "health_summary": "Demo state. Reemplaza por cerebro_state.json real para datos en vivo.",
+    "drawdown_current_pct": 0.0,
+    "drawdown_from_peak": "2026-05-11",
+    "cash_eur": 50000.0,
+    "cash_pct_nav": 100.0,
+    "positions_count": 0
+  },
+  "tax_alerts": [],
+  "portfolios_chart_data": {
+    "labels": ["2026-05-11", "2026-05-12", "2026-05-13", "2026-05-14"],
+    "series": [
+      {"name": "real", "values": [100.0, 100.0, 100.0, 100.0], "color": "#1f77b4", "default_visible": true},
+      {"name": "benchmark_passive", "values": [100.0, 100.0, 100.0, 100.0], "color": "#7f7f7f", "default_visible": true}
+    ]
+  },
+  "recommendations": [
+    {
+      "id": "rec_demo",
+      "type": "INFO",
+      "asset": "demo",
+      "priority": "low",
+      "headline": "Modo demo: configura cerebro_state.json con tu state real",
+      "narrative": "Este es el archivo example committeado al repo. El cerebro real (Phase 2B vía Anthropic API cron diario) escribirá un cerebro_state.json local con posiciones, alertas y recomendaciones reales. Mientras tanto, esta vista muestra la estructura completa de la Pantalla 1.",
+      "action": "Phase 2B: implementar cerebro generator que consuma snapshots + events + price log y emita este JSON.",
+      "color": "yellow"
+    }
+  ],
+  "comparative_analysis": {
+    "headline": "Sin datos comparativos en modo demo",
+    "narrative": "La comparativa explicable se llenará cuando el cerebro genere state real desde los snapshots de las 9 carteras paper.",
+    "comparator_today": "benchmark_passive",
+    "comparator_reason": "Demo placeholder",
+    "action": "Configura cerebro_state.json local para ver comparativa real."
+  },
+  "news_feed": []
+}

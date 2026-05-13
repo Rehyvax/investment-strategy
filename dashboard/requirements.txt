@@ -1,0 +1,7 @@
+streamlit>=1.30.0
+pandas>=2.0.0
+plotly>=5.18.0
+python-dateutil>=2.8.0
+
+# Anthropic API — added in Phase 2B when chat ad-hoc lands
+# anthropic>=0.18.0
