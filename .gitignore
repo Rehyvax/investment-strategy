@@ -186,3 +186,13 @@ dashboard/.streamlit/secrets.toml
 # regression on every push. Contains: positions, NAV, narratives,
 # decisions — ALL financial data, NO name/email/dni/iban/keys.
 !dashboard/data/cerebro_state.json
+# snapshot_real_latest.json IS committed for the same deploy reason —
+# sanitized mirror of data/snapshots/real/<latest>.json (ISIN dropped,
+# native-currency raw notionals dropped). PII-gated by the same
+# tests/test_pii_safety.py suite.
+!dashboard/data/snapshot_real_latest.json
+# dashboard_bundle.json IS committed for the same deploy reason —
+# sanitized cross-page bundle (theses, fiscal/trades log, Claude
+# Autonomous state). ISIN dropped throughout. PII-gated by the same
+# tests/test_pii_safety.py suite.
+!dashboard/data/dashboard_bundle.json

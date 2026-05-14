@@ -67,7 +67,26 @@ def _load_env_file() -> None:
 SNAPSHOTS_DIR = ROOT / "data" / "snapshots"
 TRADES_DIR = ROOT / "data" / "events" / "portfolios"
 THESES_DIR = ROOT / "data" / "events" / "theses"
+CLAUDE_AUTO_DECISIONS_DIR = ROOT / "data" / "events" / "claude_autonomous_decisions"
+CLAUDE_AUTO_TRADES_DIR = ROOT / "data" / "events" / "claude_autonomous_trades"
+CLAUDE_AUTO_REFLECTIONS_DIR = (
+    ROOT / "data" / "events" / "claude_autonomous_reflections"
+)
+CLAUDE_AUTO_SNAP_DIR = ROOT / "data" / "snapshots" / "claude_autonomous"
 DEFAULT_OUT = ROOT / "dashboard" / "data" / "cerebro_state.json"
+# Sanitized snapshot for the public Streamlit Cloud deploy.
+# Mirrors the structure of data/snapshots/real/*.json but strips
+# broker-fingerprint fields (ISIN, native-currency raw notionals).
+# Consumed by dashboard/services/portfolio_reader.py as a fallback
+# when the gitignored data/snapshots/real/ directory is absent
+# (i.e. on Streamlit Cloud).
+SANITIZED_REAL_OUT = ROOT / "dashboard" / "data" / "snapshot_real_latest.json"
+# Cross-page bundle for Cloud: theses + fiscal + trade log + Claude
+# Autonomous state, all sanitized (no ISIN, no broker-fingerprint
+# fields, no PII). Consumed by ThesisBrowser, FiscalReader,
+# 7_Trades.py and 11_Claude_Autonomous.py as a fallback when the
+# gitignored data/events/ and data/snapshots/ trees are absent.
+DASHBOARD_BUNDLE_OUT = ROOT / "dashboard" / "data" / "dashboard_bundle.json"
 
 ALL_PORTFOLIOS = (
     "real",
@@ -1277,6 +1296,402 @@ def _atomic_write(path: Path, payload: dict) -> None:
     os.replace(tmp, path)
 
 
+# Per-position fields safe to publish in the Streamlit Cloud repo.
+# Whitelist (not blacklist) so a future schema bump doesn't accidentally
+# leak a new fingerprint-style column.
+_SAFE_POSITION_FIELDS = (
+    "ticker",
+    "exchange",
+    "currency",
+    "quantity",
+    "current_price_native",
+    "cost_basis_per_share_native",
+    "current_value_eur",
+    "cost_basis_eur",
+    "unrealized_pnl_eur",
+    "sector_at_purchase",
+    "country_at_purchase",
+)
+
+# Top-level fields safe to publish.
+_SAFE_TOP_FIELDS = (
+    "as_of_date",
+    "as_of_ts",
+    "portfolio_id",
+    "currency_base",
+    "nav_total_eur",
+    "equity_value_total_eur",
+    "cost_basis_total_eur",
+    "cash_eur",
+    "fx_rate_date",
+    "fx_rate_usd_per_eur",
+    "fx_rate_usd_to_eur",
+    "positions_count",
+    "unrealized_pnl_total_eur",
+)
+
+
+def _sanitize_real_snapshot(snap: dict) -> dict:
+    """Project a real-portfolio snapshot down to the fields safe for a
+    public GitHub repo. Drops ISIN (broker fingerprint) and native-
+    currency raw notionals (cost_basis_native, current_value_native) —
+    the EUR equivalents are kept so Cartera can render the table."""
+    out: dict[str, object] = {
+        k: snap[k] for k in _SAFE_TOP_FIELDS if k in snap
+    }
+    out["_sanitized"] = True
+    positions = []
+    for p in snap.get("positions", []) or []:
+        positions.append({k: p[k] for k in _SAFE_POSITION_FIELDS if k in p})
+    out["positions"] = positions
+    return out
+
+
+def _write_sanitized_real_snapshot(as_of: date) -> Path | None:
+    """Write the sanitized real-portfolio snapshot to disk for the
+    Streamlit Cloud deploy. Returns the path written, or None when no
+    upstream snapshot is available."""
+    snap = _load_snapshot("real", as_of)
+    if snap is None:
+        return None
+    sanitized = _sanitize_real_snapshot(snap)
+    _atomic_write(SANITIZED_REAL_OUT, sanitized)
+    return SANITIZED_REAL_OUT
+
+
+# ----------------------------------------------------------------------
+# Cross-page sanitized bundle (theses + fiscal + trades + autonomous)
+#
+# Drives Pantalla 8 (Tesis), Pantalla 9 (Fiscal), Pantalla 7 (Trades —
+# read-only history on Cloud) and Pantalla 11 (Claude Autonomous).
+# Sanitization rules:
+#   - Drop ISIN entirely (broker fingerprint).
+#   - Drop event_id / lot_id raw values (internal references useful
+#     only to the local ledger).
+#   - Keep aggregates: realized_pnl_eur, proceeds_eur, quantity, price.
+#   - Keep timestamps (already in ISO format, no PII).
+# ----------------------------------------------------------------------
+_SAFE_TRADE_FIELDS = (
+    "event_type",
+    "ticker",
+    "side",
+    "quantity",
+    "price_native",
+    "currency",
+    "trade_date",
+    "fees_eur",
+    "fx_rate_usd_per_eur",
+    "proceeds_eur",
+    "cost_basis_eur",
+    "realized_pnl_eur",
+    "is_loss",
+    "two_month_rule_window_end",
+)
+
+_SAFE_THESIS_EVENT_FIELDS = (
+    "event_type",
+    "ticker",
+    "timestamp",
+    "recommendation",
+    "recommendation_v2",
+    "confidence_calibrated",
+    "thesis_summary",
+    "reasoning",
+    "invalidation_criteria",
+    "falsifier_status_audit",
+    "user_override_active",
+    "override_reason",
+    "review_outcome",
+    "size_change_pct",
+    "close_reason",
+)
+
+_SAFE_AUTO_DECISION_FIELDS = (
+    "timestamp",
+    "action",
+    "ticker",
+    "thesis",
+    "critique",
+    "confidence",
+    "rationale",
+    "trade_intent",
+    "decision_id",
+)
+
+_SAFE_AUTO_TRADE_FIELDS = (
+    "ticker",
+    "side",
+    "quantity",
+    "filled_avg_price",
+    "filled_at",
+    "submitted_at",
+    "recorded_at",
+    "order_id",
+    "status",
+    "notional_usd",
+    "decision_id",
+)
+
+_SAFE_AUTO_REFLECTION_FIELDS = (
+    "reflection_timestamp",
+    "decision_id",
+    "outcome",
+    "score",
+    "lessons",
+    "brier_components",
+)
+
+_SAFE_AUTO_SNAPSHOT_TOP = (
+    "as_of_date",
+    "as_of_ts",
+    "portfolio_id",
+    "nav_total_eur",
+    "cash_eur",
+    "equity_value_total_eur",
+    "alpaca_status",
+)
+
+_SAFE_AUTO_POSITION_FIELDS = (
+    "ticker",
+    "shares",
+    "cost_basis_per_share_native",
+    "current_price_native",
+    "current_value_eur",
+    "weight_pct",
+    "unrealized_pl",
+    "unrealized_plpc",
+)
+
+
+def _project_dict(src: dict, fields: tuple[str, ...]) -> dict:
+    return {k: src[k] for k in fields if k in src}
+
+
+def _all_trade_events() -> list[dict]:
+    """Return every `trade` event from
+    data/events/portfolios/real/trades.jsonl in chronological order."""
+    trades_fp = TRADES_DIR / "real" / "trades.jsonl"
+    out: list[dict] = []
+    for ev in _iter_jsonl(trades_fp):
+        if ev.get("event_type") != "trade":
+            continue
+        out.append(_project_dict(ev, _SAFE_TRADE_FIELDS))
+    out.sort(key=lambda e: e.get("trade_date", ""))
+    return out
+
+
+def _all_thesis_events() -> dict[str, list[dict]]:
+    """Return every thesis-related event keyed by ticker, in
+    chronological order."""
+    by_ticker: dict[str, list[dict]] = {}
+    if not THESES_DIR.exists():
+        return by_ticker
+    for f in sorted(THESES_DIR.glob("*.jsonl")):
+        for ev in _iter_jsonl(f):
+            t = ev.get("ticker")
+            if not isinstance(t, str) or not t:
+                # Some thesis files name the ticker via stem.
+                t = f.stem
+            sanitized = _project_dict(ev, _SAFE_THESIS_EVENT_FIELDS)
+            sanitized.setdefault("ticker", t)
+            by_ticker.setdefault(t, []).append(sanitized)
+    for t in by_ticker:
+        by_ticker[t].sort(key=lambda e: e.get("timestamp", ""))
+    return by_ticker
+
+
+def _summarize_thesis_assets(
+    by_ticker: dict[str, list[dict]],
+    sector_country: dict[str, dict[str, str]],
+) -> list[dict]:
+    """Replicates the structure ThesisBrowser._summarize_asset emits,
+    so the page can render straight from the bundle."""
+    out: list[dict] = []
+    for ticker, events in by_ticker.items():
+        is_closed = any(
+            e.get("event_type") == "thesis_closed_position"
+            for e in events
+        )
+        latest_thesis = next(
+            (
+                e for e in reversed(events)
+                if e.get("event_type") in ("thesis", "thesis_review")
+            ),
+            None,
+        )
+        latest_override = next(
+            (
+                e for e in reversed(events)
+                if e.get("event_type") == "thesis_user_override_annotation"
+                and e.get("user_override_active")
+            ),
+            None,
+        )
+        recommendation = (
+            (latest_thesis or {}).get("recommendation")
+            or (latest_thesis or {}).get("recommendation_v2")
+            or "—"
+        )
+        confidence = (latest_thesis or {}).get("confidence_calibrated")
+        halfway = False
+        if latest_thesis:
+            fsa = latest_thesis.get("falsifier_status_audit") or {}
+            if isinstance(fsa, dict):
+                for det in fsa.values():
+                    if isinstance(det, dict):
+                        s = (det.get("status") or "").lower()
+                        if s in ("halfway_activated", "activated", "active"):
+                            halfway = True
+                            break
+        if is_closed:
+            status = "closed"
+        elif latest_override is not None:
+            status = "override_active"
+        elif halfway:
+            status = "halfway_active"
+        elif latest_thesis is not None:
+            status = "active"
+        else:
+            status = "no_thesis"
+        meta = sector_country.get(
+            ticker, {"sector": "unknown", "country": "unknown"}
+        )
+        out.append(
+            {
+                "ticker": ticker,
+                "status": status,
+                "recommendation": recommendation,
+                "confidence_calibrated": confidence,
+                "sector": meta["sector"],
+                "country": meta["country"],
+                "n_events": len(events),
+                "last_event_date": (events[-1].get("timestamp") or "")[:10],
+                "is_closed": is_closed,
+                "has_halfway_falsifier": halfway,
+            }
+        )
+    out.sort(key=lambda x: x.get("last_event_date", ""), reverse=True)
+    return out
+
+
+def _claude_autonomous_block() -> dict:
+    """Sanitized snapshot of the Claude Autonomous paper account,
+    including decisions, executed trades, reflections and the equity
+    curve. All read-only fields; no PII."""
+    out: dict = {
+        "snapshot": {},
+        "decisions": [],
+        "trades": [],
+        "reflections": [],
+        "equity_curve": [],
+    }
+    # Latest snapshot
+    if CLAUDE_AUTO_SNAP_DIR.exists():
+        cands = sorted(
+            f for f in CLAUDE_AUTO_SNAP_DIR.glob("*.json")
+            if not f.name.startswith("_")
+            and len(f.stem) == 10
+            and f.stem[4] == "-"
+            and f.stem[7] == "-"
+        )
+        if cands:
+            try:
+                raw = json.loads(cands[-1].read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                raw = {}
+            snap = _project_dict(raw, _SAFE_AUTO_SNAPSHOT_TOP)
+            snap["positions"] = [
+                _project_dict(p, _SAFE_AUTO_POSITION_FIELDS)
+                for p in (raw.get("positions") or [])
+            ]
+            out["snapshot"] = snap
+        # Equity curve (all dated snapshots)
+        curve: list[list] = []
+        for f in cands:
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            nav = float(data.get("nav_total_eur") or 0.0)
+            if nav > 0:
+                curve.append([f.stem, nav])
+        out["equity_curve"] = curve
+    # Decisions
+    if CLAUDE_AUTO_DECISIONS_DIR.exists():
+        for f in sorted(CLAUDE_AUTO_DECISIONS_DIR.glob("*.jsonl")):
+            for ev in _iter_jsonl(f):
+                out["decisions"].append(
+                    _project_dict(ev, _SAFE_AUTO_DECISION_FIELDS)
+                )
+        out["decisions"].sort(
+            key=lambda x: x.get("timestamp", ""), reverse=True
+        )
+    # Trades
+    if CLAUDE_AUTO_TRADES_DIR.exists():
+        for f in sorted(CLAUDE_AUTO_TRADES_DIR.glob("*.jsonl")):
+            for ev in _iter_jsonl(f):
+                out["trades"].append(
+                    _project_dict(ev, _SAFE_AUTO_TRADE_FIELDS)
+                )
+        out["trades"].sort(
+            key=lambda x: x.get("recorded_at", ""), reverse=True
+        )
+    # Reflections
+    if CLAUDE_AUTO_REFLECTIONS_DIR.exists():
+        for f in sorted(CLAUDE_AUTO_REFLECTIONS_DIR.glob("*.jsonl")):
+            for ev in _iter_jsonl(f):
+                out["reflections"].append(
+                    _project_dict(ev, _SAFE_AUTO_REFLECTION_FIELDS)
+                )
+        out["reflections"].sort(
+            key=lambda x: x.get("reflection_timestamp", ""),
+            reverse=True,
+        )
+    return out
+
+
+def _build_dashboard_bundle(as_of: date) -> dict:
+    """Produce the cross-page Cloud bundle.
+
+    Schema (top-level keys):
+      - generated_at: ISO timestamp of bundle creation
+      - as_of_date: date the bundle reflects
+      - theses_assets: list per ticker, mirrors ThesisBrowser output
+      - theses_events_by_ticker: full timeline per ticker, sanitized
+      - trades_log: chronological list of sanitized trade events
+      - claude_autonomous: snapshot + decisions + trades +
+        reflections + equity_curve
+    """
+    # Sector/country from the latest real snapshot (helpful for theses
+    # that reference held positions).
+    sc: dict[str, dict[str, str]] = {}
+    real_snap = _load_snapshot("real", as_of)
+    if real_snap is not None:
+        for p in real_snap.get("positions", []) or []:
+            t = p.get("ticker")
+            if isinstance(t, str):
+                sc[t] = {
+                    "sector": p.get("sector_at_purchase") or "unknown",
+                    "country": p.get("country_at_purchase") or "unknown",
+                }
+    by_ticker = _all_thesis_events()
+    return {
+        "generated_at": _now_iso_utc(),
+        "as_of_date": as_of.isoformat(),
+        "theses_assets": _summarize_thesis_assets(by_ticker, sc),
+        "theses_events_by_ticker": by_ticker,
+        "trades_log": _all_trade_events(),
+        "claude_autonomous": _claude_autonomous_block(),
+    }
+
+
+def _write_dashboard_bundle(as_of: date) -> Path | None:
+    """Write dashboard_bundle.json. Returns the path on success."""
+    bundle = _build_dashboard_bundle(as_of)
+    _atomic_write(DASHBOARD_BUNDLE_OUT, bundle)
+    return DASHBOARD_BUNDLE_OUT
+
+
 def main(argv: list[str] | None = None) -> int:
     _load_env_file()
     p = argparse.ArgumentParser(description="Generate cerebro_state.json.")
@@ -1295,6 +1710,25 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     _atomic_write(args.out, state)
+
+    # Also write the sanitized real-portfolio snapshot so Cartera works
+    # on Streamlit Cloud (where data/snapshots/ is gitignored). Failure
+    # here is non-fatal — the main cerebro state is already on disk.
+    try:
+        written = _write_sanitized_real_snapshot(as_of)
+        if written is not None:
+            print(f"  Sanitized real snapshot → {written}")
+    except Exception as exc:  # noqa: BLE001 — never block cerebro write
+        print(f"  Sanitized snapshot skipped (non-fatal): {exc}")
+
+    # Cross-page bundle for Tesis / Fiscal / Trades / Claude Autonomous.
+    # Same non-fatal guard — bundle errors must never block the rest.
+    try:
+        written_b = _write_dashboard_bundle(as_of)
+        if written_b is not None:
+            print(f"  Dashboard bundle → {written_b}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  Dashboard bundle skipped (non-fatal): {exc}")
 
     # Notifications hook (optional, non-fatal). Sends emails / Telegram
     # only when SMTP / Telegram env keys are configured; otherwise the

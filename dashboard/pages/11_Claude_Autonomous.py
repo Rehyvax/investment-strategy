@@ -44,6 +44,9 @@ TRADES_DIR = PROJECT_ROOT / "data" / "events" / "claude_autonomous_trades"
 REFLECTIONS_DIR = (
     PROJECT_ROOT / "data" / "events" / "claude_autonomous_reflections"
 )
+# Cloud fallback bundle. Contains a "claude_autonomous" block with
+# snapshot + decisions + trades + reflections + equity_curve.
+BUNDLE_PATH = PROJECT_ROOT / "dashboard" / "data" / "dashboard_bundle.json"
 
 INITIAL_EQUITY_USD = 50_000.0
 
@@ -78,69 +81,92 @@ def _iter_jsonl(path: Path) -> list[dict]:
     return out
 
 
-def _latest_snapshot() -> dict:
-    if not SNAP_DIR.exists():
-        return {}
-    cands = sorted(
-        f for f in SNAP_DIR.glob("*.json")
-        if not f.name.startswith("_") and len(f.stem) == 10
-        and f.stem[4] == "-" and f.stem[7] == "-"
-    )
-    if not cands:
+def _load_bundle_autonomous() -> dict:
+    """Cloud fallback: read the `claude_autonomous` block from the
+    committed dashboard_bundle.json. Returns an empty dict when the
+    bundle is unreadable or doesn't have the section."""
+    if not BUNDLE_PATH.exists():
         return {}
     try:
-        return json.loads(cands[-1].read_text(encoding="utf-8"))
+        bundle = json.loads(BUNDLE_PATH.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return {}
+    block = bundle.get("claude_autonomous", {})
+    return block if isinstance(block, dict) else {}
+
+
+def _latest_snapshot() -> dict:
+    if SNAP_DIR.exists():
+        cands = sorted(
+            f for f in SNAP_DIR.glob("*.json")
+            if not f.name.startswith("_") and len(f.stem) == 10
+            and f.stem[4] == "-" and f.stem[7] == "-"
+        )
+        if cands:
+            try:
+                return json.loads(cands[-1].read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                pass
+    snap = _load_bundle_autonomous().get("snapshot", {})
+    return snap if isinstance(snap, dict) else {}
 
 
 def _all_decisions() -> list[dict]:
     out: list[dict] = []
-    if not DECISIONS_DIR.exists():
-        return out
-    for f in sorted(DECISIONS_DIR.glob("*.jsonl")):
-        out.extend(_iter_jsonl(f))
+    if DECISIONS_DIR.exists():
+        for f in sorted(DECISIONS_DIR.glob("*.jsonl")):
+            out.extend(_iter_jsonl(f))
+    if not out:
+        out = list(_load_bundle_autonomous().get("decisions", []) or [])
     out.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     return out
 
 
 def _all_trades() -> list[dict]:
     out: list[dict] = []
-    if not TRADES_DIR.exists():
-        return out
-    for f in sorted(TRADES_DIR.glob("*.jsonl")):
-        out.extend(_iter_jsonl(f))
+    if TRADES_DIR.exists():
+        for f in sorted(TRADES_DIR.glob("*.jsonl")):
+            out.extend(_iter_jsonl(f))
+    if not out:
+        out = list(_load_bundle_autonomous().get("trades", []) or [])
     out.sort(key=lambda x: x.get("recorded_at", ""), reverse=True)
     return out
 
 
 def _all_reflections() -> list[dict]:
     out: list[dict] = []
-    if not REFLECTIONS_DIR.exists():
-        return out
-    for f in sorted(REFLECTIONS_DIR.glob("*.jsonl")):
-        out.extend(_iter_jsonl(f))
+    if REFLECTIONS_DIR.exists():
+        for f in sorted(REFLECTIONS_DIR.glob("*.jsonl")):
+            out.extend(_iter_jsonl(f))
+    if not out:
+        out = list(_load_bundle_autonomous().get("reflections", []) or [])
     out.sort(key=lambda x: x.get("reflection_timestamp", ""), reverse=True)
     return out
 
 
 def _equity_curve() -> list[tuple[str, float]]:
-    if not SNAP_DIR.exists():
-        return []
     out: list[tuple[str, float]] = []
-    for f in sorted(SNAP_DIR.glob("*.json")):
-        if f.name.startswith("_"):
-            continue
-        stem = f.stem
-        if not (len(stem) == 10 and stem[4] == "-" and stem[7] == "-"):
-            continue
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            continue
-        nav = data.get("nav_total_eur") or 0.0
-        if nav > 0:
-            out.append((stem, float(nav)))
+    if SNAP_DIR.exists():
+        for f in sorted(SNAP_DIR.glob("*.json")):
+            if f.name.startswith("_"):
+                continue
+            stem = f.stem
+            if not (len(stem) == 10 and stem[4] == "-" and stem[7] == "-"):
+                continue
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            nav = data.get("nav_total_eur") or 0.0
+            if nav > 0:
+                out.append((stem, float(nav)))
+    if not out:
+        bundle_curve = _load_bundle_autonomous().get("equity_curve", []) or []
+        out = [
+            (str(point[0]), float(point[1]))
+            for point in bundle_curve
+            if isinstance(point, (list, tuple)) and len(point) >= 2
+        ]
     return out
 
 

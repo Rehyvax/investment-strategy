@@ -13,6 +13,11 @@ import json  # noqa: E402
 
 import streamlit as st  # noqa: E402
 
+# `auth` runs `_bootstrap_env_once()` at import time, so the
+# ANTHROPIC_API_KEY (and any future secret) is populated in os.environ
+# before any downstream module reads it. Importing here therefore
+# satisfies a hidden dependency: do not move below other imports that
+# call into `scripts.llm_*` or read `os.environ` at module level.
 from auth import check_auth  # noqa: E402
 from services.cerebro_state import DEFAULT_STATE_PATH  # noqa: E402
 from styles import inject_css  # noqa: E402

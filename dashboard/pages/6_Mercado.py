@@ -37,6 +37,11 @@ except ImportError:
 
 CEREBRO_PATH = PROJECT_ROOT / "dashboard" / "data" / "cerebro_state.json"
 SNAPSHOT_DIR = PROJECT_ROOT / "data" / "snapshots" / "real"
+# Cloud fallback for the chat's snapshot context. Same sanitized file
+# Cartera + Fiscal consume.
+SANITIZED_SNAPSHOT_FP = (
+    PROJECT_ROOT / "dashboard" / "data" / "snapshot_real_latest.json"
+)
 
 
 SUGGESTED_QUESTIONS = (
@@ -63,22 +68,34 @@ def _load_cerebro_state() -> dict:
 
 
 def _load_latest_snapshot() -> dict:
-    if not SNAPSHOT_DIR.exists():
-        return {}
-    candidates = []
-    for f in SNAPSHOT_DIR.glob("*.json"):
-        if f.name.startswith("_"):
-            continue
-        stem = f.stem
-        if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
-            candidates.append(f)
-    if not candidates:
-        return {}
-    candidates.sort()
-    try:
-        return json.loads(candidates[-1].read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
+    """Load the latest real snapshot for chat context.
+
+    Local: read the most recent dated file under data/snapshots/real/.
+    Cloud: fall back to the committed sanitized snapshot mirror."""
+    if SNAPSHOT_DIR.exists():
+        candidates = []
+        for f in SNAPSHOT_DIR.glob("*.json"):
+            if f.name.startswith("_"):
+                continue
+            stem = f.stem
+            if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
+                candidates.append(f)
+        if candidates:
+            candidates.sort()
+            try:
+                return json.loads(
+                    candidates[-1].read_text(encoding="utf-8")
+                )
+            except (json.JSONDecodeError, OSError):
+                pass
+    if SANITIZED_SNAPSHOT_FP.exists():
+        try:
+            return json.loads(
+                SANITIZED_SNAPSHOT_FP.read_text(encoding="utf-8")
+            )
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
 
 
 def _send(user_input: str) -> None:
