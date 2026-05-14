@@ -26,6 +26,7 @@ st.set_page_config(
     page_title="Tesis Browser",
     page_icon=":books:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 inject_css()
 

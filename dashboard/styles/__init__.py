@@ -83,12 +83,28 @@ CUSTOM_CSS = f"""
 
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    header {{visibility: hidden;}}
+
+    /* Streamlit Cloud header: keep the sidebar-toggle button visible
+       (children with collapsedControl test-id), hide only the deploy
+       toolbar so the chrome stays clean. Previously `header {{visibility:
+       hidden;}}` killed the entire bar including the toggle, leaving the
+       user with no way to reopen a collapsed sidebar on narrow widths. */
+    header[data-testid="stHeader"] {{
+        background: transparent;
+        height: 2.5rem;
+    }}
+    [data-testid="stToolbar"] {{display: none !important;}}
+    [data-testid="stDecoration"] {{display: none !important;}}
 
     .main .block-container {{
         padding-top: 2rem;
         padding-bottom: 2rem;
         max-width: 1200px;
+        /* Defensive — prevents long unbroken strings (URLs, tickers,
+           narrative paragraphs from llm_narratives) from overflowing
+           the right edge on narrow viewports. */
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }}
 
     .institutional-card {{
@@ -98,6 +114,8 @@ CUSTOM_CSS = f"""
         padding: 1.25rem;
         margin-bottom: 1rem;
         color: {TEXT_PRIMARY};
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }}
 
     .status-badge {{
@@ -232,6 +250,8 @@ CUSTOM_CSS = f"""
         background: {BACKGROUND_ELEVATED} !important;
         color: {TEXT_PRIMARY} !important;
         border-left-width: 3px;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }}
 
     hr {{

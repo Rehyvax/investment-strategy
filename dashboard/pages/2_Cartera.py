@@ -33,6 +33,7 @@ st.set_page_config(
     page_title="Cartera Real",
     page_icon=":briefcase:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 inject_css()
 

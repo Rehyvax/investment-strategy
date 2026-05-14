@@ -32,6 +32,7 @@ st.set_page_config(
     page_title="Comparativa Portfolios",
     page_icon=":bar_chart:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 inject_css()

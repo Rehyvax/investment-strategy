@@ -23,7 +23,10 @@ from services.cerebro_state import load_cerebro_state  # noqa: E402
 from styles import inject_css  # noqa: E402
 
 st.set_page_config(
-    page_title="Investment Dashboard", page_icon=":bar_chart:", layout="wide"
+    page_title="Investment Dashboard",
+    page_icon=":bar_chart:",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
 inject_css()

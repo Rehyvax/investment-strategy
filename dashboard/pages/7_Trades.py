@@ -99,6 +99,7 @@ st.set_page_config(
     page_title="Operaciones",
     page_icon=":receipt:",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
 inject_css()
 
