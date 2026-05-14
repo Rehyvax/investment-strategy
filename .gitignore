@@ -156,6 +156,8 @@ scripts/*
 !scripts/run_nightly_backup.bat
 !scripts/run_claude_autonomous_daily.bat
 !scripts/install_daily_task.ps1
+!scripts/install_auto_commit_tasks.ps1
+!scripts/auto_commit_cerebro.bat
 # Whole-folder un-ignore for the agents package — every module under
 # scripts/agents/ is committed code (no hardcoded data).
 !scripts/agents/
@@ -179,4 +181,8 @@ dashboard/.streamlit/secrets.toml
 # -----------------------------------------------------------------------------
 !dashboard/data/
 !dashboard/data/cerebro_state.example.json
-dashboard/data/cerebro_state.json
+# cerebro_state.json IS committed (Streamlit Cloud public deploy).
+# User manually verified PII-free and tests/test_pii_safety.py runs as
+# regression on every push. Contains: positions, NAV, narratives,
+# decisions — ALL financial data, NO name/email/dni/iban/keys.
+!dashboard/data/cerebro_state.json
