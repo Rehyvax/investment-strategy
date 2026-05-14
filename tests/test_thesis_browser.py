@@ -204,7 +204,11 @@ class TestEdge:
     def test_handles_empty_theses_dir(self, tmp_path):
         empty = tmp_path / "empty"
         empty.mkdir()
-        b = ThesisBrowser(theses_dir=empty, snapshots_dir=tmp_path)
+        b = ThesisBrowser(
+            theses_dir=empty,
+            snapshots_dir=tmp_path,
+            bundle_fp=tmp_path / "missing_bundle.json",
+        )
         assert b.list_all_assets_with_theses() == []
         assert b.filter_assets() == []
         assert b.get_distinct_values("status") == []

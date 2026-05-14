@@ -19,7 +19,7 @@ import streamlit as st  # noqa: E402
 
 from auth import check_auth  # noqa: E402
 from services.thesis_browser import ThesisBrowser  # noqa: E402
-from styles import inject_css, status_badge  # noqa: E402
+from styles import flat_html, inject_css, status_badge  # noqa: E402
 
 
 st.set_page_config(
@@ -161,7 +161,7 @@ for asset in filtered:
     col_main, col_btn = st.columns([5, 1])
     with col_main:
         st.markdown(
-            f"""
+            flat_html(f"""
             <div class="institutional-card">
                 <div style="display:flex; justify-content:space-between;
                             align-items:center; flex-wrap:wrap; gap:8px;">
@@ -184,7 +184,7 @@ for asset in filtered:
                     </div>
                 </div>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )
     with col_btn:
@@ -261,7 +261,7 @@ if selected:
             )
 
             st.markdown(
-                f"""
+                flat_html(f"""
                 <div class="institutional-card" style="margin-bottom:8px;">
                     <div style="display:flex; justify-content:space-between;
                                 align-items:center; flex-wrap:wrap; gap:8px;">
@@ -277,6 +277,6 @@ if selected:
                     <div style="margin-top:6px; font-size:0.85rem;">{details_html}</div>
                     {summary_html}
                 </div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )

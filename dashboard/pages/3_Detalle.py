@@ -32,7 +32,7 @@ from auth import check_auth  # noqa: E402
 from services.cerebro_state import load_cerebro_state  # noqa: E402
 from services.position_reader import PositionReader  # noqa: E402
 from services.thesis_reader import ThesisReader  # noqa: E402
-from styles import inject_css, status_badge  # noqa: E402
+from styles import flat_html, inject_css, status_badge  # noqa: E402
 
 try:
     from llm_narratives import (  # type: ignore  # noqa: E402
@@ -155,7 +155,7 @@ if position:
     currency = position.get("currency", "USD")
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
                 <div>
@@ -183,7 +183,7 @@ if position:
                 </div>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 else:
@@ -218,7 +218,7 @@ if authoritative_thesis:
     )
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
                 <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#E8ECF4;">{version_label}</span>
@@ -227,7 +227,7 @@ if authoritative_thesis:
             </div>
             <p style="color:#94A0B8; line-height:1.6; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{summary[:1500]}</p>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
@@ -264,7 +264,7 @@ if authoritative_thesis:
                 else ""
             )
             st.markdown(
-                f"""
+                flat_html(f"""
                 <div style="background:#131825; padding:10px 14px; border-radius:6px; margin-bottom:6px; border-left:3px solid {color};">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="color:{color}; font-size:0.875rem; font-weight:700; min-width:32px; text-align:center;">{icon}</span>
@@ -276,7 +276,7 @@ if authoritative_thesis:
                         </div>
                     </div>
                 </div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )
 else:
@@ -309,7 +309,7 @@ if len(all_thesis_versions) > 1:
         marker_color = "#3B82F6" if is_latest else "#3A4258"
         marker_size = "12px" if is_latest else "8px"
         rows.append(
-            f"""
+            flat_html(f"""
             <div style="display:flex; gap:16px; padding:12px 0; border-bottom:1px solid #1C2333;">
                 <div style="display:flex; flex-direction:column; align-items:center; padding-top:4px;">
                     <div style="width:{marker_size}; height:{marker_size}; border-radius:50%; background:{marker_color};"></div>
@@ -322,7 +322,7 @@ if len(all_thesis_versions) > 1:
                     </div>
                 </div>
             </div>
-            """
+            """)
         )
     st.markdown(
         '<div class="institutional-card">' + "".join(rows) + "</div>",
@@ -396,14 +396,14 @@ if position and authoritative_thesis:
     opinion = st.session_state.get(cache_key)
     if opinion:
         st.markdown(
-            f"""
+            flat_html(f"""
             <div class="institutional-card" style="border-left: 3px solid #3B82F6;">
                 <div style="margin-bottom:10px;">
                     {status_badge("LLM", "blue")}
                 </div>
                 <p style="color:#E8ECF4; line-height:1.7; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{opinion}</p>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )
     else:
@@ -414,12 +414,12 @@ if position and authoritative_thesis:
             else "Tesis activa. Monitor de falsifiers automático."
         )
         st.markdown(
-            f"""
+            flat_html(f"""
             <div class="institutional-card" style="border-left: 3px solid #94A0B8;">
                 <div style="margin-bottom:10px;">{status_badge("DETERMINISTA", "neutral")}</div>
                 <p style="color:#94A0B8; line-height:1.7; margin:0; font-size:0.9375rem;">{rule_text}</p>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )
 else:
@@ -475,7 +475,7 @@ if last_debate:
         )
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                 {verdict_badge}
@@ -496,7 +496,7 @@ if last_debate:
                 <p style="margin:6px 0 0 0; color:#E8ECF4;">{suggested}</p>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
@@ -517,14 +517,14 @@ if last_debate:
                     st.markdown("---")
 else:
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card" style="background:#131825;">
             <p style="margin:0; color:#94A0B8;">
                 Sin debate registrado para {selected}. Se ejecuta semanalmente
                 o cuando hay news high relevance.
             </p>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
     if st.button(
@@ -696,7 +696,7 @@ if asset_news:
             if url and url != "#" else ""
         )
         news_rows.append(
-            f"""
+            flat_html(f"""
             <div style="padding:10px 0; border-bottom:1px solid #1C2333;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
                     {rbadge}
@@ -705,7 +705,7 @@ if asset_news:
                 <div style='color:#E8ECF4; line-height:1.5; font-size:0.9375rem;'>{summary}</div>
                 <div style='margin-top:4px;'>{link}</div>
             </div>
-            """
+            """)
         )
     st.markdown(
         '<div class="institutional-card">' + "".join(news_rows) + "</div>",
@@ -739,12 +739,12 @@ if events:
             else ""
         )
         rows.append(
-            f"""
+            flat_html(f"""
             <div style="display:flex; gap:16px; padding:10px 0; border-bottom:1px solid #1C2333;">
                 <div style="font-family:'JetBrains Mono', monospace; color:#3B82F6; font-weight:600; min-width:110px;">{evt.get('date', '—')}</div>
                 <div style="color:#94A0B8; line-height:1.5; flex:1;">{evt.get('event', '—')}{source_badge}</div>
             </div>
-            """
+            """)
         )
     st.markdown(
         '<div class="institutional-card">' + "".join(rows) + "</div>",
@@ -837,12 +837,12 @@ if st.session_state.get(f"chat_open_detalle_{selected}"):
         answer = st.session_state.get(f"chat_answer_detalle_{selected}")
         if answer:
             st.markdown(
-                f"""
+                flat_html(f"""
                 <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #3B82F6; margin-top:12px;">
                     <span style="font-size:0.75rem; color:#3B82F6; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
                     <p style="margin:8px 0 0 0; color:#E8ECF4; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
                 </div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )
         if st.button("Cerrar chat", key=f"close_detalle_{selected}", type="secondary"):

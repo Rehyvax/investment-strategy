@@ -279,6 +279,23 @@ def inject_css() -> None:
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
+def flat_html(s: str) -> str:
+    """Collapse a multi-line HTML string into a single line so Streamlit's
+    markdown processor does not parse indented HTML as a fenced code block.
+
+    Streamlit 1.50+ uses markdown-it-py, which treats lines with 4+ leading
+    spaces as indented-code blocks even when surrounding lines are HTML —
+    the failure mode is literal `</span></div>` leaking into the rendered
+    page (observed in Pantalla 3 Detalle and Pantalla 8 Tesis after the
+    Slate Pro CSS rewrite).
+
+    Stripping per-line whitespace preserves HTML semantics (browsers collapse
+    inter-tag whitespace) while keeping markdown-it-py from mis-tokenizing
+    the block. Use on every `st.markdown(f\"\"\"...\"\"\", unsafe_allow_html=True)`
+    call whose f-string spans more than one line."""
+    return "".join(line.strip() for line in s.splitlines())
+
+
 def status_badge(label: str, status: str = "neutral") -> str:
     """Return HTML for a sober status badge.
 

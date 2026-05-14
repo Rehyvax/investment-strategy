@@ -193,6 +193,7 @@ class TestEdgeCases:
             snapshots_dir=tmp_path / "missing",
             trades_fp=tmp_path / "missing.jsonl",
             cerebro_state_fp=tmp_path / "cerebro.json",
+            sanitized_real_fp=tmp_path / "missing_sanitized.json",
         )
         kpis = r.get_kpis()
         assert kpis["nav_total_eur"] == 0.0

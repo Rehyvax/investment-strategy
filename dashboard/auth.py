@@ -22,6 +22,57 @@ import streamlit as st
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+_BRIDGED_KEYS = (
+    "ANTHROPIC_API_KEY",
+    "ALPACA_API_KEY",
+    "ALPACA_API_SECRET",
+    "ALPACA_BASE_URL",
+    "FINNHUB_API_KEY",
+    "OPENBB_PAT",
+    "FRED_API_KEY",
+    "FMP_API_KEY",
+)
+
+
+def _walk_secrets_into_env(node: object, parent_key: str = "", depth: int = 0) -> None:
+    """Recursively walk a Streamlit `Secrets` (or dict) tree and copy
+    any leaf whose key matches a bridged env-var name into `os.environ`.
+
+    Handles three real-world TOML layouts seen in Streamlit Cloud:
+      (a) Top-level flat:        ANTHROPIC_API_KEY = "sk-ant-..."
+      (b) Nested anthropic:      [anthropic] api_key = "sk-ant-..."
+      (c) Accidentally nested:   `ANTHROPIC_API_KEY = "..."` placed
+          AFTER a `[section]` header (a TOML pitfall) ends up as
+          `section.ANTHROPIC_API_KEY` — we still find it.
+
+    `os.environ.setdefault` is used so an already-set env var (local
+    `.env`, OS env, container env) wins over secrets."""
+    if depth > 4:
+        return
+    try:
+        items = list(node.items())  # type: ignore[union-attr]
+    except (AttributeError, TypeError):
+        return
+
+    for raw_key, value in items:
+        key = str(raw_key)
+        # Recurse into nested mappings (Streamlit nests as Secrets, not dict).
+        if hasattr(value, "items") and not isinstance(value, (str, bytes)):
+            _walk_secrets_into_env(value, parent_key=key, depth=depth + 1)
+            continue
+        # Leaf value — match against bridged keys.
+        if not isinstance(value, (str, int, float, bool)):
+            continue
+        env_target: str | None = None
+        upper = key.upper()
+        if upper in _BRIDGED_KEYS:
+            env_target = upper
+        elif key.lower() == "api_key" and parent_key.lower() == "anthropic":
+            env_target = "ANTHROPIC_API_KEY"
+        if env_target and str(value).strip():
+            os.environ.setdefault(env_target, str(value).strip())
+
+
 def _bootstrap_env_once() -> None:
     """Populate `os.environ` from Streamlit secrets (Cloud) and `.env`
     (local) before any module reads `ANTHROPIC_API_KEY`.
@@ -30,43 +81,33 @@ def _bootstrap_env_once() -> None:
     Python process across pages within a session, so this fires a
     single time per `streamlit run` lifecycle.
 
-    Priority (highest first):
-      1. Already-set `os.environ` value — never overridden.
-      2. Streamlit Cloud `st.secrets`:
-         - flat `ANTHROPIC_API_KEY = "..."`
-         - nested `[anthropic] api_key = "..."`
-      3. Local `.env` via python-dotenv (skipped if not installed)."""
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        return
-
+    Resolution order:
+      1. Existing `os.environ` value — never overridden (handled by
+         `_walk_secrets_into_env` via `setdefault`).
+      2. Streamlit Cloud `st.secrets`, walked recursively so flat,
+         nested, and accidentally-nested keys all bridge correctly.
+      3. Local `.env` via python-dotenv (only if ANTHROPIC_API_KEY is
+         still missing — local devs want .env to win over absent
+         secrets, but Cloud values should win over absent .env)."""
+    secrets = None
     try:
         secrets = st.secrets
     except (FileNotFoundError, AttributeError):
-        secrets = None
+        pass
 
     if secrets is not None:
-        candidate = ""
         try:
-            candidate = str(secrets.get("ANTHROPIC_API_KEY", "") or "")
-        except Exception:  # noqa: BLE001 — secrets may raise on bad TOML
-            candidate = ""
-        if not candidate:
-            try:
-                anthropic_block = secrets.get("anthropic", {})
-                if isinstance(anthropic_block, dict):
-                    candidate = str(anthropic_block.get("api_key", "") or "")
-            except Exception:  # noqa: BLE001
-                candidate = ""
-        if candidate:
-            os.environ["ANTHROPIC_API_KEY"] = candidate
-            return
+            _walk_secrets_into_env(secrets)
+        except Exception:  # noqa: BLE001 — defensive: never break the page
+            pass
 
-    try:
-        from dotenv import load_dotenv  # type: ignore
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            from dotenv import load_dotenv  # type: ignore
 
-        load_dotenv(_PROJECT_ROOT / ".env")
-    except ImportError:
-        pass
+            load_dotenv(_PROJECT_ROOT / ".env")
+        except ImportError:
+            pass
 
 
 _bootstrap_env_once()
