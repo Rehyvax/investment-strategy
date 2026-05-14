@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-05-14T02:12:45.555129Z",
-  "next_evaluation": "2026-05-15T02:12:30.484953Z",
+  "generated_at": "2026-05-14T12:59:26.952599Z",
+  "next_evaluation": "2026-05-15T12:59:12.245179Z",
   "as_of_date": "2026-05-14",
   "market_state": {
     "regime": "neutral",
     "regime_color": "yellow",
-    "explanation": "El mercado presenta una volatilidad contenida pero sin señales de capitulación ni euforia, con el flujo de capital girando claramente hacia tecnología en detrimento de defensivos, lo que sugiere un apetito por riesgo selectivo más que una convicción amplia. Para esta cartera en particular, el dato crítico no es el VIX sino la ausencia total de liquidez combinada con un health status en rojo: operar con 19 posiciones activas, cero cash y sin margen de maniobra es una posición estructuralmente frágil ante cualquier dislocación puntual. La relación bonos-renta variable negativa en 30 días confirma que no hay rotación defensiva que te proteja si el sentimiento gira. La acción concreta es liberar liquidez cerrando la posición con peor ratio riesgo-rendimiento de la cartera, no para mejorar el perfil de retorno, sino para recuperar capacidad de reacción.",
+    "explanation": "Mercado en transición. VIX 18.2 sin señal direccional fuerte; observar próximos catalizadores macro.",
     "money_flow": "Capital favorece tecnología sobre defensivos (ratio XLK/XLU elevado).",
     "fear_level": "moderate",
     "vix": 18.170000076293945,
     "bond_equity_ratio_30d": -0.09120874337120422,
     "fear_summary": "VIX 18.17. Bond/Equity 30d ratio -9.1%.",
-    "_narrative_source": "llm"
+    "_narrative_source": "rule_based"
   },
   "portfolio_real": {
     "nav_total_eur": 48183.58,
@@ -195,10 +195,10 @@
       "asset": "MELI",
       "priority": "high",
       "headline": "MELI: falsifier en marcha, vigilar gate",
-      "narrative": "MercadoLibre mantiene una posición relevante en cartera con un peso del 4,27% NAV, pero la convicción sobre la tesis es insuficiente para justificar un incremento en este momento: la ausencia de catalizadores confirmados hasta mayo-junio de 2026 deja la posición en terreno de espera sin dirección clara. El foco debe ponerse en el filing del Q1 2026 y en la reunión del BCB de junio, que serán los primeros puntos de verificación reales para determinar si el entorno regulatorio y la dinámica de márgenes en Brasil evolucionan conforme a lo esperado. Mantén los EUR 2.057 actuales sin modificar la exposición, evitando tanto el recorte prematuro como el refuerzo antes de que los datos respalden una convicción más sólida.",
+      "narrative": "Tesis vigente: WATCH con confianza 0.48. Próximos catalizadores: Q1 2026 10-Q SEC filing (40d post period end) (2026-05-15); BCB monetary policy meeting (2026-06). Falsifier status: 3 falsifiers tracked; alguno en motion.",
       "action": "Mantener posición y revisar tras el próximo gate.",
       "color": "yellow",
-      "_narrative_source": "llm"
+      "_narrative_source": "rule_based"
     },
     {
       "id": "rec_msft",
@@ -206,19 +206,19 @@
       "asset": "MSFT",
       "priority": "medium",
       "headline": "MSFT: mantener, sin disparadores activos",
-      "narrative": "La posición en MSFT representa actualmente un peso significativo en cartera —8,51% del NAV— con una tesis en estado de vigilancia activa y una confianza moderada que no justifica ni ampliar ni liquidar en este momento. Los próximos catalizadores relevantes, los resultados del Q4 FY2026 a finales de julio y la conferencia Ignite en noviembre, son eventos con capacidad real de redefinir la narrativa, pero ninguno es inminente y no hay falsificadores activos que presionen a actuar. Mantén la posición sin modificaciones hasta que al menos uno de esos catalizadores proporcione información que eleve la convicción o la erosione. La acción concreta es no ejecutar ninguna operación sobre MSFT hoy.",
+      "narrative": "Tesis vigente: WATCH con confianza 0.65. Próximos catalizadores: Q4 FY2026 earnings (FY ending 30-jun-2026) (2026-07-29); Ignite 2026 (Microsoft annual customer conference) (2026-11-17). Falsifier status: —",
       "action": "Mantener posición y revisar tras el próximo gate.",
       "color": "yellow",
-      "_narrative_source": "llm"
+      "_narrative_source": "rule_based"
     }
   ],
   "comparative_analysis": {
-    "headline": "**Cartera real rezagada respecto al índice pasivo**",
-    "narrative": "La cartera real acumula una diferencia negativa de 1,14 puntos porcentuales frente al benchmark pasivo desde T0, lo que sitúa su desempeño por debajo del comparador de referencia en este período inicial. La divergencia refleja, previsiblemente, el efecto combinado de comisiones, sesgos de selección activa o un calendario de inversión distinto al del índice, factores que penalizan a las carteras gestionadas en horizontes cortos. Con una diferencia de 1,14 puntos porcentuales, la magnitud supera el umbral de ruido estadístico menor, aunque en un período de tiempo reducido no permite aún extraer conclusiones estructurales con solidez suficiente. No obstante, la coincidencia entre la cartera real y la shadow en terreno negativo —mientras el índice pasivo y el robo-advisor permanecen planos— sugiere que el origen es metodológico o de construcción de cartera, no aleatorio. Se recomienda revisar el perfil de costes implícitos y la exposición sectorial antes de concluir el primer período de evaluación completo, sin realizar ajustes de posición hasta disponer de una serie temporal más representativa.",
+    "headline": "Underperform vs benchmark_passive",
+    "narrative": "Tu real ha rendido -1.14% desde T0. benchmark_passive ha rendido +0.00%. Diferencia: -1.14 pp.",
     "comparator_today": "benchmark_passive",
     "comparator_reason": "Benchmark passive (70% IWDA / 20% VFEM / 10% IEAG) es la alternativa indexada barata; mide tu skill neta de fees.",
     "action": "Subir watch sobre benchmark_passive: evaluar si la diferencia persiste a 30 días para conclusiones.",
-    "_narrative_source": "llm"
+    "_narrative_source": "rule_based"
   },
   "news_by_asset": {
     "ICE": [
@@ -263,6 +263,19 @@
       },
       {
         "ticker": "ICE",
+        "headline": "NYSE Content Update: Global Medical Response to Go Public After $479 Million IPO",
+        "url": "https://finance.yahoo.com/news/nyse-content-global-medical-response-125500545.html?.tsrc=rss",
+        "timestamp": "Wed, 13 May 2026 12:55:00 +0000",
+        "source": "yahoo_finance",
+        "snippet": "The New York Stock Exchange (NYSE) provides a daily pre-market update directly from the NYSE Trading Floor. Access today's NYSE Pre-market update for market insights before trading begins.",
+        "relevance": "medium",
+        "category": "operational",
+        "summary_1line": "NYSE facilitates Global Medical Response $479M IPO, boosting exchange listing activity",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
+      {
+        "ticker": "ICE",
         "headline": "A Look At Intercontinental Exchange (ICE) Valuation As IRM 2 Extends To ERCOT Power Markets - Yahoo Finance",
         "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNQlpGa2ZjbHdEdUZzMGd3OG1Cd2dnSmE4UklSNDh2alRuZ2I4ZU5YaEJDVXJ2UWtpQUtua3Z6UzJkWFBrV2o1SnZXMTNQWW1BbWZsVE9qSmlfeURja1lvc005bHl2a2NJYk5EY3d3OUxxUkVYc0tFMmhVRkkyXzl5bEdIVjZDZjhBbjR3dko3dXRaMW93WEMzNlJSNWhPVzZtN3FZYWJhaFAxNlp5Nnc?oc=5",
         "timestamp": "Tue, 12 May 2026 12:15:24 GMT",
@@ -273,22 +286,22 @@
         "summary_1line": "Valuation analysis of ICE as IRM 2 expands into ERCOT power markets",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "ICE",
-        "headline": "A Look At Intercontinental Exchange (ICE) Valuation As IRM 2 Extends To ERCOT Power Markets",
-        "url": "https://finance.yahoo.com/markets/stocks/articles/look-intercontinental-exchange-ice-valuation-121524128.html?.tsrc=rss",
-        "timestamp": "Tue, 12 May 2026 12:15:24 +0000",
-        "source": "yahoo_finance",
-        "snippet": "Intercontinental Exchange (ICE) extended its IRM 2 Value at Risk margining model to U.S. ERCOT power markets. The move tightens risk controls around Texas electricity contracts and builds on growing power derivatives activity. See our latest analysis for Intercontinental Exchange. Recent product launches in ERCOT power, stronger first quarter results and a higher quarterly dividend have come alongside a 1-year total shareholder return that declined 7.94%, while the 5-year total shareholder...",
-        "relevance": "medium",
-        "category": "operational",
-        "summary_1line": "ICE expands IRM 2 risk margining model to ERCOT power markets",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
     ],
     "GRAB": [
+      {
+        "ticker": "GRAB",
+        "headline": "Why Grab Holdings Stock Is Back Under Pressure After a Big Q1 Beat - TechStock²",
+        "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxOaURYWDJXelY1amNsbFAtZTBndVQ2emo3bWJYNUo0b0o3a01oYjFMSXNZdGJjdEtYMDRtb1RCaGZKcUxGRFpTdjJ1SDBsUFQzZFlOd3dtNTFyWlJDTmVvOUtETjNHcG9iNktkaDlXelpVYlI5YjRoMk95dXVHMkxlOGN6R0lXdGhnN2pDNWRtZEM?oc=5",
+        "timestamp": "Wed, 13 May 2026 18:33:13 GMT",
+        "source": "google_news",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMikAFBVV95cUxOaURYWDJXelY1amNsbFAtZTBndVQ2emo3bWJYNUo0b0o3a01oYjFMSXNZdGJjdEtYMDRtb1RCaGZKcUxGRFpTdjJ1SDBsUFQzZFlOd3dtNTFyWlJDTmVvOUtETjNHcG9iNktkaDlXelpVYlI5YjRoMk95dXVHMkxlOGN6R0lXdGhnN2pDNWRtZEM?oc=5\" target=\"_blank\">Why Grab Holdings Stock Is Back Under Pressure After a Big Q1 Beat</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">TechStock²</font>",
+        "relevance": "high",
+        "category": "earnings",
+        "summary_1line": "Grab stock under pressure despite strong Q1 earnings beat, analyst concerns linger",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
       {
         "ticker": "GRAB",
         "headline": "Grab Holdings Ltd (GRAB): Is the AI-Led Product Strategy Paying Off?",
@@ -338,19 +351,6 @@
         "relevance": "high",
         "category": "earnings",
         "summary_1line": "Analysts urge caution interpreting Grab's recent strong earnings report results",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "GRAB",
-        "headline": "China Renaissance Sees Upside in Grab Holdings (GRAB), Sets New $5 Target",
-        "url": "https://finance.yahoo.com/markets/stocks/articles/china-renaissance-sees-upside-grab-062922103.html?.tsrc=rss",
-        "timestamp": "Tue, 12 May 2026 06:29:22 +0000",
-        "source": "yahoo_finance",
-        "snippet": "Grab Holdings Limited (NASDAQ:GRAB) is included among the 10 Best Robinhood Stocks to Buy According to Billionaires. On May 7, China Renaissance analyst Yiwen Zhang upgraded Grab Holdings Limited (NASDAQ:GRAB) to Buy from Hold. The analyst set a $5 price target on the stock. On May 4, Reuters reported that Grab posted first-quarter revenue above Wall […]",
-        "relevance": "high",
-        "category": "sentiment",
-        "summary_1line": "China Renaissance upgrades GRAB to Buy with new $5 price target",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
@@ -425,6 +425,19 @@
     "CRM": [
       {
         "ticker": "CRM",
+        "headline": "Salesforce (NYSE:CRM) Trading Down 3.1% Following Analyst Downgrade - MarketBeat",
+        "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQNWhJVVFpZ05sN3ZqMlkyT2lZanNoSEEwNTc5SlhtRUNxRnRNR2VXZmRBNHAzdUpHcUs3bFYtSkQ2MDZrak5acnc2ckpBUHN1ako2NGNZbUJ6MWVoM1I5WThVMElYM2piN3lFd3g2bTdrVHplVi1iR3FSUnhYOHVTRnZTS2M4RWhqYWNQRTFMUFhYYVo3TGlnU2xrTDE1MGl6YWVLT00yUnZSMkFxSC15aWpHTzdMWVE?oc=5",
+        "timestamp": "Wed, 13 May 2026 21:20:01 GMT",
+        "source": "google_news",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMitwFBVV95cUxQNWhJVVFpZ05sN3ZqMlkyT2lZanNoSEEwNTc5SlhtRUNxRnRNR2VXZmRBNHAzdUpHcUs3bFYtSkQ2MDZrak5acnc2ckpBUHN1ako2NGNZbUJ6MWVoM1I5WThVMElYM2piN3lFd3g2bTdrVHplVi1iR3FSUnhYOHVTRnZTS2M4RWhqYWNQRTFMUFhYYVo3TGlnU2xrTDE1MGl6YWVLT00yUnZSMkFxSC15aWpHTzdMWVE?oc=5\" target=\"_blank\">Salesforce (NYSE:CRM) Trading Down 3.1% Following Analyst Downgrade</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">MarketBeat</font>",
+        "relevance": "medium",
+        "category": "sentiment",
+        "summary_1line": "CRM shares drop 3.1% following analyst downgrade decision",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
+      {
+        "ticker": "CRM",
         "headline": "Top Analyst Reports for Meta, Pfizer & Salesforce",
         "url": "https://finance.yahoo.com/markets/stocks/articles/top-analyst-reports-meta-pfizer-210100247.html?.tsrc=rss",
         "timestamp": "Wed, 13 May 2026 21:01:00 +0000",
@@ -472,19 +485,6 @@
         "relevance": "high",
         "category": "operational",
         "summary_1line": "U.S. Air Force awards Salesforce a $72M enterprise software contract.",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "CRM",
-        "headline": "Salesforce stock (US78409V1044): Analyst cuts price target to $188 ahead of Q1 earnings - AD HOC NEWS",
-        "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxObVJyUEJmXzdZcWlpQUJQQUJvamR6RXp5T2Nia2dsTUJFSkFFRnhDWlBGSlgybEduVVJ3STZpcmVKSlRZTWpvYkY1ZXV5UzBQTjBnbEJhanJyQnJLeUdySTVLcnhvajA5TFpFTkZiZTBnRldBQWVyVklXTEY5d2JCU0R2WEhVNm1LSUZCbTZPWXhaM0wwczBwNi02RFdObGh3dkFTSkpHZExXWDl2aV90azI2azJ3elFxcGYyUWJMX3RuUkRwLVE?oc=5",
-        "timestamp": "Wed, 13 May 2026 12:16:58 GMT",
-        "source": "google_news",
-        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMixgFBVV95cUxObVJyUEJmXzdZcWlpQUJQQUJvamR6RXp5T2Nia2dsTUJFSkFFRnhDWlBGSlgybEduVVJ3STZpcmVKSlRZTWpvYkY1ZXV5UzBQTjBnbEJhanJyQnJLeUdySTVLcnhvajA5TFpFTkZiZTBnRldBQWVyVklXTEY5d2JCU0R2WEhVNm1LSUZCbTZPWXhaM0wwczBwNi02RFdObGh3dkFTSkpHZExXWDl2aV90azI2azJ3elFxcGYyUWJMX3RuUkRwLVE?oc=5\" target=\"_blank\">Salesforce stock (US78409V1044): Analyst cuts price target to $188 ahead of Q1 earnings</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">AD HOC NEWS</font>",
-        "relevance": "high",
-        "category": "sentiment",
-        "summary_1line": "Analyst reduces CRM price target to $188 ahead of Q1 earnings report",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
@@ -760,6 +760,32 @@
     "NOW": [
       {
         "ticker": "NOW",
+        "headline": "ServiceNow And Boomi Deepen Ties To Power AI Control Tower Ambitions",
+        "url": "https://finance.yahoo.com/markets/stocks/articles/servicenow-boomi-deepen-ties-power-231319841.html?.tsrc=rss",
+        "timestamp": "Wed, 13 May 2026 23:13:19 +0000",
+        "source": "yahoo_finance",
+        "snippet": "ServiceNow (NYSE:NOW) has expanded its partnership with Boomi to support integrated, real-time data activation across enterprise systems. The company launched the Workflow Data Network Passport Program, aimed at improving connectivity for enterprise AI use cases. These developments are intended to support ServiceNow's positioning as a control tower for agentic AI and its broader AI Platform. For investors watching NYSE:NOW, this move sits at the intersection of workflow automation,...",
+        "relevance": "medium",
+        "category": "operational",
+        "summary_1line": "ServiceNow expands Boomi partnership to enhance enterprise AI data connectivity capabilities",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
+      {
+        "ticker": "NOW",
+        "headline": "Stock Market Today (LIVE): Inflation Returns. Markets, Beware.; What Inflation Can't Kill (So Far) - The Motley Fool",
+        "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOWjdmUG0yX1JmeHhrLS1tTnZZMlVCY2FsTjNWdHFYeXBSUWJUei1NYUtfSUJ0RlpXYXlLSUM2N1Q5UUcwTk9ybVdrSVlmU0l2VmRCNFJnbkdPYTRqUmxId1lpdXYwRmx1MTNmY2JWOTV5b05LdS1jMWFkQXFHdGFJMQ?oc=5",
+        "timestamp": "Wed, 13 May 2026 23:04:00 GMT",
+        "source": "google_news",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMigAFBVV95cUxOWjdmUG0yX1JmeHhrLS1tTnZZMlVCY2FsTjNWdHFYeXBSUWJUei1NYUtfSUJ0RlpXYXlLSUM2N1Q5UUcwTk9ybVdrSVlmU0l2VmRCNFJnbkdPYTRqUmxId1lpdXYwRmx1MTNmY2JWOTV5b05LdS1jMWFkQXFHdGFJMQ?oc=5\" target=\"_blank\">Stock Market Today (LIVE): Inflation Returns. Markets, Beware.; What Inflation Can't Kill (So Far)</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">The Motley Fool</font>",
+        "relevance": "medium",
+        "category": "macro",
+        "summary_1line": "Inflation concerns return, posing potential headwinds for growth stocks like NOW",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
+      {
+        "ticker": "NOW",
         "headline": "Truly Unique AI Powerhouse Etches Buy Zone. Now Comes This Test. - Investor's Business Daily",
         "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxPdlB0RWZ2d0pZQTI1WXlRMXVIZnJTR3NGUERRMXBWUk9FVVMyLUViemhXRm5QbU9nR25VMEg5aHFZUDcyVE5QNWo3OXFFUmdsaXg5eXlYb1kxQTFvU3AtYU95cGFJTXNxYi1IcUFWeTdKMEc2LUplaVVqcHU3NGxyUVVlYUhqY3pqeWx0aEFjeHN2VEJyakszNEhaS3d2V3o3OFZwMnkyUm5NNXJFdzBDZlFCOFREZHRMdXlVOW0taEE?oc=5",
         "timestamp": "Wed, 13 May 2026 20:09:00 GMT",
@@ -794,32 +820,6 @@
         "relevance": "medium",
         "category": "operational",
         "summary_1line": "Boomi joins ServiceNow Workflow Data Network Passport Program as launch partner",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "NOW",
-        "headline": "ServiceNow (NOW) Price Target Raised as AI Growth Story Gains Strength",
-        "url": "https://finance.yahoo.com/markets/stocks/articles/servicenow-now-price-target-raised-235714910.html?.tsrc=rss",
-        "timestamp": "Mon, 11 May 2026 23:57:14 +0000",
-        "source": "yahoo_finance",
-        "snippet": "ServiceNow’s long term story is gaining more weight, landing it sixth place on our list of AI Stocks Wall Street Is Watching Now. On May 5, Evercore ISI analyst Kirk Materne raised the price target on the stock to $150.00 (from $140.00) while maintaining an “Outperform” rating. The firm particularly pointed to a $30 billion plus […]",
-        "relevance": "medium",
-        "category": "sentiment",
-        "summary_1line": "Evercore ISI raises NOW price target to $150 on AI growth strength",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "NOW",
-        "headline": "Why Analysts Still Favor ServiceNow, Inc. (NOW)",
-        "url": "https://finance.yahoo.com/markets/stocks/articles/why-analysts-still-favor-servicenow-170332936.html?.tsrc=rss",
-        "timestamp": "Mon, 11 May 2026 17:03:32 +0000",
-        "source": "yahoo_finance",
-        "snippet": "ServiceNow, Inc. (NYSE:NOW) is among the best high-return technology stocks to buy now. On May 6, BMO Capital reaffirmed an Outperform rating and a price target of $115 on ServiceNow, Inc. (NYSE:NOW). According to the firm, the company’s platform is defensive due to the following three factors: autonomous execution, governance, and context. The firm believes […]",
-        "relevance": "medium",
-        "category": "sentiment",
-        "summary_1line": "BMO reaffirms Outperform on NOW citing defensive platform characteristics",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
@@ -1067,29 +1067,29 @@
       },
       {
         "ticker": "NVDA",
-        "headline": "NVIDIA, Boeing, Deere: 3 Stocks With the Most to Gain From Trump’s Beijing Summit - 24/7 Wall St.",
-        "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNNFNBVEpsSWo1Yk5JWVUwLVpheER3WE1jOERfeUl3bEpnLW5fWFBaWGs2aUQ3U1FidU9yeGx4U2NMUnBiQS1kT0pRWmdGX1NOQTllQWJjLXN5aWpZUXBLXzNDUVExOGlDOFF0d21nT0ZFSlNiZjBKeG1GZXkyakc2cmkyWUQwSGl0S2o2VzB6d1lYcGUxYzFYa2VtSHRXUFEzaGNjVnZOZ0JROXJXbWNHUDRfbEFzUzdqaktIZ0lR?oc=5",
-        "timestamp": "Wed, 13 May 2026 20:07:02 GMT",
+        "headline": "Nvidia Rally Propels Stocks to New Records - WSJ",
+        "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNSmRVSGJXOXVlZVJCRFJNUXBhbDAwQmdLU2U5Njh3OVpJVE05bWh5b2tpaXE4RWJXbS1WSWRnSTA2bC1xeHlGRkhvU1NfNV9kbVNwNlBWWUcyWTdDX3lEU3AtcDl6WW13QXZQS2dDbm9pRlk0dnVUakxNek1fVW5wc0JweUhtT1Z0Mlh3cmJGSQ?oc=5",
+        "timestamp": "Wed, 13 May 2026 21:02:00 GMT",
         "source": "google_news",
-        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMivgFBVV95cUxNNFNBVEpsSWo1Yk5JWVUwLVpheER3WE1jOERfeUl3bEpnLW5fWFBaWGs2aUQ3U1FidU9yeGx4U2NMUnBiQS1kT0pRWmdGX1NOQTllQWJjLXN5aWpZUXBLXzNDUVExOGlDOFF0d21nT0ZFSlNiZjBKeG1GZXkyakc2cmkyWUQwSGl0S2o2VzB6d1lYcGUxYzFYa2VtSHRXUFEzaGNjVnZOZ0JROXJXbWNHUDRfbEFzUzdqaktIZ0lR?oc=5\" target=\"_blank\">NVIDIA, Boeing, Deere: 3 Stocks With the Most to Gain From Trump’s Beijing Summit</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">24/7 Wall St.</font>",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMijwFBVV95cUxNSmRVSGJXOXVlZVJCRFJNUXBhbDAwQmdLU2U5Njh3OVpJVE05bWh5b2tpaXE4RWJXbS1WSWRnSTA2bC1xeHlGRkhvU1NfNV9kbVNwNlBWWUcyWTdDX3lEU3AtcDl6WW13QXZQS2dDbm9pRlk0dnVUakxNek1fVW5wc0JweUhtT1Z0Mlh3cmJGSQ?oc=5\" target=\"_blank\">Nvidia Rally Propels Stocks to New Records</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">WSJ</font>",
         "relevance": "medium",
-        "category": "macro",
-        "summary_1line": "NVDA among stocks seen benefiting from US-China trade summit talks",
+        "category": "sentiment",
+        "summary_1line": "Nvidia-led rally drives broader stock market to new record highs",
         "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
       },
       {
         "ticker": "NVDA",
-        "headline": "Nvidia Stock Draws Attention As Culper Research Takes Short Position Over China Ties - Stocktwits",
-        "url": "https://news.google.com/rss/articles/CBMi4gFBVV95cUxQMUlHNWw0S3dWQ2NHbERpWHViTmNXTTl5YTVTTTdGUGtWYnFITW14c1pOUHhjWkdscEpZMzhfRW5ZdlQxVkNaSWg1LS1PczJVY3BvbjY5N1FfajlSeFNhN3FqOGhkNWJxX040ejIzU2xRNENnOFNTZ0tjUUpodFljaWljS0RsUUcweWZFb3F0clFQWVBZVG82UEdVX2FxeWpreGtSbzRmbzVBTVRNUEdPZlpXMTh4c0lTUGFGbHFhTVljSXJEWWV5MUFGMW1zTG9vRWk3RkVXTU1qM29KcVphVFRn?oc=5",
-        "timestamp": "Wed, 13 May 2026 20:04:00 GMT",
+        "headline": "Nvidia Rallies As CEO Jensen Huang Joins Trump's China Trip - Investor's Business Daily",
+        "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQSVlibE9UT0Rta0pMY2dWNTk0MU5wejUzRENidm1KdllxNVMxRS1nclNsX1U3SXpFZm5KbndpbnJ0cVBublpod3J6R3hNZzNfLXhwcFliaUdad3lDWWN5OWlNM2x1NDBEZjAxUWQycUFRYzgzbzduZ2dGVGgxZU51eU5qMGFyV1hldDY0cVR1OE5nSUNYSHNjY1FQS3FNQ3M?oc=5",
+        "timestamp": "Wed, 13 May 2026 20:45:00 GMT",
         "source": "google_news",
-        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi4gFBVV95cUxQMUlHNWw0S3dWQ2NHbERpWHViTmNXTTl5YTVTTTdGUGtWYnFITW14c1pOUHhjWkdscEpZMzhfRW5ZdlQxVkNaSWg1LS1PczJVY3BvbjY5N1FfajlSeFNhN3FqOGhkNWJxX040ejIzU2xRNENnOFNTZ0tjUUpodFljaWljS0RsUUcweWZFb3F0clFQWVBZVG82UEdVX2FxeWpreGtSbzRmbzVBTVRNUEdPZlpXMTh4c0lTUGFGbHFhTVljSXJEWWV5MUFGMW1zTG9vRWk3RkVXTU1qM29KcVphVFRn?oc=5\" target=\"_blank\">Nvidia Stock Draws Attention As Culper Research Takes Short Position Over China Ties</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">S",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMinwFBVV95cUxQSVlibE9UT0Rta0pMY2dWNTk0MU5wejUzRENidm1KdllxNVMxRS1nclNsX1U3SXpFZm5KbndpbnJ0cVBublpod3J6R3hNZzNfLXhwcFliaUdad3lDWWN5OWlNM2x1NDBEZjAxUWQycUFRYzgzbzduZ2dGVGgxZU51eU5qMGFyV1hldDY0cVR1OE5nSUNYSHNjY1FQS3FNQ3M?oc=5\" target=\"_blank\">Nvidia Rallies As CEO Jensen Huang Joins Trump's China Trip</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">Investor's Business Daily</font>",
         "relevance": "high",
         "category": "regulatory",
-        "summary_1line": "Culper Research shorts NVDA citing concerns over China business ties",
+        "summary_1line": "CEO Jensen Huang joins Trump's China trip, signaling potential trade relief for Nvidia.",
         "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
       }
     ],
     "ARDX": [
@@ -1296,6 +1296,19 @@
     "MELI": [
       {
         "ticker": "MELI",
+        "headline": "MELI Stock Rises Overnight After Post-Earnings Tumble: Michael Burry Buys The Dip Even As Analysts Flag Caution - Stocktwits",
+        "url": "https://news.google.com/rss/articles/CBMihAJBVV95cUxQTGJvemZzLW02SGl0a25Fd2dZN0FUcjZMZFlzSEM4NTRIZ1NHbll5RXNhTERVa0JwQ2hGSHpvRzN5bnBmZlJtNHp1QlNnYmJuX2pZemh4blV5cHJiNlNfdXJhQlZoN0huQ0NiNlVRU3JXZTlrY3poOFFYNUhacWU4VVZSWXFmRTFuRzZyMEtKS3M3QUtwYk1TQm1QZnF4VGx5YXpibFk1U0RZSF9pNVg2Z0tfRDRxZmVSVnI4bmJTZ3NpMlM5RnduejNUSkgxeDJLMzh2TXgySUlmLUNab2loOUFnWmQ0c0hqaDkyWUpCT3NkNHhpejNOV2QzOUo4aDUzOXIwYg?oc=5",
+        "timestamp": "Wed, 13 May 2026 20:26:29 GMT",
+        "source": "google_news",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMihAJBVV95cUxQTGJvemZzLW02SGl0a25Fd2dZN0FUcjZMZFlzSEM4NTRIZ1NHbll5RXNhTERVa0JwQ2hGSHpvRzN5bnBmZlJtNHp1QlNnYmJuX2pZemh4blV5cHJiNlNfdXJhQlZoN0huQ0NiNlVRU3JXZTlrY3poOFFYNUhacWU4VVZSWXFmRTFuRzZyMEtKS3M3QUtwYk1TQm1QZnF4VGx5YXpibFk1U0RZSF9pNVg2Z0tfRDRxZmVSVnI4bmJTZ3NpMlM5RnduejNUSkgxeDJLMzh2TXgySUlmLUNab2loOUFnWmQ0c0hqaDkyWUpCT3NkNHhpejNOV2QzOUo4aDUzOXIwYg?oc=5\" target=\"_blank\">MELI Stock Rises Overnight After Post-Earnings Tumble: Michael Burry Buys The",
+        "relevance": "medium",
+        "category": "sentiment",
+        "summary_1line": "Burry buys MELI post-earnings dip as analysts urge caution on stock",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
+      {
+        "ticker": "MELI",
         "headline": "MercadoLibre faces tougher path to margin expansion, analysts turn neutral",
         "url": "https://finance.yahoo.com/news/mercadolibre-faces-tougher-path-margin-192323069.html?.tsrc=rss",
         "timestamp": "Wed, 13 May 2026 19:23:23 +0000",
@@ -1343,19 +1356,6 @@
         "relevance": "high",
         "category": "earnings",
         "summary_1line": "MELI Q1 growth offset by margin pressure, credit risk, and high spending",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "MELI",
-        "headline": "MercadoLibre Ownership Shifts Test Confidence In Reinvestment And Margins",
-        "url": "https://finance.yahoo.com/news/mercadolibre-ownership-shifts-test-confidence-151938413.html?.tsrc=rss",
-        "timestamp": "Wed, 13 May 2026 15:19:38 +0000",
-        "source": "yahoo_finance",
-        "snippet": "Several large shareholders, including Baillie Gifford and WCM Investment Management, recently cut their positions in MercadoLibre after its latest earnings release. Investor Michael Burry disclosed a new full position in NasdaqGS:MELI, signaling a contrasting view on the company. Management is continuing heavy reinvestment into logistics, fintech, and credit, which is weighing on margins in the near term. The combination of insider and institutional moves with ongoing reinvestment has become...",
-        "relevance": "medium",
-        "category": "sentiment",
-        "summary_1line": "Major shareholders cut MELI positions while Michael Burry initiates new stake",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
@@ -1415,19 +1415,32 @@
       },
       {
         "ticker": "AMD",
-        "headline": "Cerebras IPO Is Expected to Price Tonight in Major Test for Chip Rally",
-        "url": "https://finance.yahoo.com/m/ba5eabee-9927-38ff-86b4-8e09db7e8ca6/cerebras-ipo-is-expected-to.html?.tsrc=rss",
-        "timestamp": "Wed, 13 May 2026 20:03:00 +0000",
+        "headline": "GF Securities Reckons Qualcomm Will Be a Hit in the CPU Server Cycle. QCOM Stock Has a Rocky Road Ahead.",
+        "url": "https://www.barchart.com/story/news/1914619/gf-securities-reckons-qualcomm-will-be-a-hit-in-the-cpu-server-cycle-qcom-stock-has-a-rocky-road-ahead?.tsrc=rss",
+        "timestamp": "Wed, 13 May 2026 20:29:38 +0000",
         "source": "yahoo_finance",
-        "snippet": "Cerebras’s IPO comes at a dramatic time, with chip stocks surging and many at or near all-time highs.",
+        "snippet": "A larger total addressablea market may be a reason for optimism when it comes to Qualcomm.",
         "relevance": "medium",
         "category": "sentiment",
-        "summary_1line": "Cerebras IPO tests chip sector momentum as stocks trade near all-time highs",
+        "summary_1line": "Qualcomm seen gaining in CPU server market, competing with AMD.",
         "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:22:22.659002Z"
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
       }
     ],
     "MGNI": [
+      {
+        "ticker": "MGNI",
+        "headline": "Magnite Reports 6% Revenue Growth and 8% Increase in Contribution ex-TAC for Q4 2025, Announces $200 Million Stock Buyback Program | MGNI Stock News - Quiver Quantitative",
+        "url": "https://news.google.com/rss/articles/CBMigAJBVV95cUxQNDhSNGRYUWtXb1RGbEpCLWhEWDEtcnVwMHFxSF9FZzIxaEM3NDYzbWNrTEdwTzJFeDg4SUdOVk5CMkdHQ2FBRXA1QWFaUjZFeEg0eC1wUHRBNFVHU1BXcHBHWV9URFVqbEZKUWV3dGVMSEJuREREU01LeUdHbGtWNkhDa2xHRXU4VVRwN1g4TmhXbHVpWUR0SWZtMFFHZnI2NXBCeTVxZnhrRGozeGFSTi02S1BTWlNCWVNtZDZhRGdvRy1wSDROaEVzNHhyTzZwVHZzTEwtYVZoRTVoNjh2OGtoRDZCMzhWaGFWRDlVUVhhUGhmMmQzLVRLcGdCVDBW?oc=5",
+        "timestamp": "Wed, 25 Feb 2026 08:00:00 GMT",
+        "source": "google_news",
+        "snippet": "<a href=\"https://news.google.com/rss/articles/CBMigAJBVV95cUxQNDhSNGRYUWtXb1RGbEpCLWhEWDEtcnVwMHFxSF9FZzIxaEM3NDYzbWNrTEdwTzJFeDg4SUdOVk5CMkdHQ2FBRXA1QWFaUjZFeEg0eC1wUHRBNFVHU1BXcHBHWV9URFVqbEZKUWV3dGVMSEJuREREU01LeUdHbGtWNkhDa2xHRXU4VVRwN1g4TmhXbHVpWUR0SWZtMFFHZnI2NXBCeTVxZnhrRGozeGFSTi02S1BTWlNCWVNtZDZhRGdvRy1wSDROaEVzNHhyTzZwVHZzTEwtYVZoRTVoNjh2OGtoRDZCMzhWaGFWRDlVUVhhUGhmMmQzLVRLcGdCVDBW?oc=5\" target=\"_blank\">Magnite Reports 6% Revenue Growth and 8% Increase in Contribution ex-TAC for Q4 202",
+        "relevance": "high",
+        "category": "earnings",
+        "summary_1line": "Magnite posts 6% revenue growth Q4 2025, launches $200M buyback program",
+        "_scoring_source": "llm",
+        "ingested_at": "2026-05-14T05:38:29.411990Z"
+      },
       {
         "ticker": "MGNI",
         "headline": "AMC makes its TV and streaming ad inventory buyable in one place - Stock Titan",
@@ -1479,19 +1492,6 @@
         "summary_1line": "Magnite beats Q1 2026 earnings by 160% and revenue estimates by 1.2%",
         "_scoring_source": "llm",
         "ingested_at": "2026-05-13T22:36:22.054023Z"
-      },
-      {
-        "ticker": "MGNI",
-        "headline": "Magnite (MGNI) Q1 2026 Earnings Transcript",
-        "url": "https://www.fool.com/earnings/call-transcripts/2026/05/06/magnite-mgni-q1-2026-earnings-transcript/?.tsrc=rss",
-        "timestamp": "Wed, 06 May 2026 22:05:09 +0000",
-        "source": "yahoo_finance",
-        "snippet": "Before we get started, I will remind you that our prepared remarks and answers to questions will include information that might be considered to be forward-looking statements, including, not limited to, statements concerning our anticipated financial performance and strategic initiatives, including the potential impacts of macroeconomic factors on our business.  A discussion of these and other risks, uncertainties, and assumptions is set forth in the company's periodic reports filed with the SEC",
-        "relevance": "high",
-        "category": "earnings",
-        "summary_1line": "Magnite Q1 2026 earnings call transcript with forward-looking financial guidance",
-        "_scoring_source": "llm",
-        "ingested_at": "2026-05-13T22:36:22.054023Z"
       }
     ]
   },
@@ -1539,6 +1539,20 @@
       "asset": "META"
     },
     {
+      "ticker": "MGNI",
+      "headline": "Magnite Reports 6% Revenue Growth and 8% Increase in Contribution ex-TAC for Q4 2025, Announces $200 Million Stock Buyback Program | MGNI Stock News - Quiver Quantitative",
+      "url": "https://news.google.com/rss/articles/CBMigAJBVV95cUxQNDhSNGRYUWtXb1RGbEpCLWhEWDEtcnVwMHFxSF9FZzIxaEM3NDYzbWNrTEdwTzJFeDg4SUdOVk5CMkdHQ2FBRXA1QWFaUjZFeEg0eC1wUHRBNFVHU1BXcHBHWV9URFVqbEZKUWV3dGVMSEJuREREU01LeUdHbGtWNkhDa2xHRXU4VVRwN1g4TmhXbHVpWUR0SWZtMFFHZnI2NXBCeTVxZnhrRGozeGFSTi02S1BTWlNCWVNtZDZhRGdvRy1wSDROaEVzNHhyTzZwVHZzTEwtYVZoRTVoNjh2OGtoRDZCMzhWaGFWRDlVUVhhUGhmMmQzLVRLcGdCVDBW?oc=5",
+      "timestamp": "Wed, 25 Feb 2026 08:00:00 GMT",
+      "source": "google_news",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMigAJBVV95cUxQNDhSNGRYUWtXb1RGbEpCLWhEWDEtcnVwMHFxSF9FZzIxaEM3NDYzbWNrTEdwTzJFeDg4SUdOVk5CMkdHQ2FBRXA1QWFaUjZFeEg0eC1wUHRBNFVHU1BXcHBHWV9URFVqbEZKUWV3dGVMSEJuREREU01LeUdHbGtWNkhDa2xHRXU4VVRwN1g4TmhXbHVpWUR0SWZtMFFHZnI2NXBCeTVxZnhrRGozeGFSTi02S1BTWlNCWVNtZDZhRGdvRy1wSDROaEVzNHhyTzZwVHZzTEwtYVZoRTVoNjh2OGtoRDZCMzhWaGFWRDlVUVhhUGhmMmQzLVRLcGdCVDBW?oc=5\" target=\"_blank\">Magnite Reports 6% Revenue Growth and 8% Increase in Contribution ex-TAC for Q4 202",
+      "relevance": "high",
+      "category": "earnings",
+      "summary_1line": "Magnite posts 6% revenue growth Q4 2025, launches $200M buyback program",
+      "_scoring_source": "llm",
+      "ingested_at": "2026-05-14T05:38:29.411990Z",
+      "asset": "MGNI"
+    },
+    {
       "ticker": "OUST",
       "headline": "OUST Stock Jumps As Rev8 Lidar And NVIDIA Tie-Up Fuel Growth Story - timothysykes.com",
       "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE5EaE1ZT3JNd0ZsV05iY1hWVHZoYzdrNDYtWW1pckhjVHFRVzBBT1hfY1luV01nV3h4V3RvUTV2NVNFM0pCdG52OW1uMHlMWW51T0pvajZzN3ZEeDgwOERjZkJGcHVUMVlrX1lzc3cyU0ZFSUVV?oc=5",
@@ -1567,6 +1581,20 @@
       "asset": "AAOI"
     },
     {
+      "ticker": "NVDA",
+      "headline": "Nvidia Rallies As CEO Jensen Huang Joins Trump's China Trip - Investor's Business Daily",
+      "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQSVlibE9UT0Rta0pMY2dWNTk0MU5wejUzRENidm1KdllxNVMxRS1nclNsX1U3SXpFZm5KbndpbnJ0cVBublpod3J6R3hNZzNfLXhwcFliaUdad3lDWWN5OWlNM2x1NDBEZjAxUWQycUFRYzgzbzduZ2dGVGgxZU51eU5qMGFyV1hldDY0cVR1OE5nSUNYSHNjY1FQS3FNQ3M?oc=5",
+      "timestamp": "Wed, 13 May 2026 20:45:00 GMT",
+      "source": "google_news",
+      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMinwFBVV95cUxQSVlibE9UT0Rta0pMY2dWNTk0MU5wejUzRENidm1KdllxNVMxRS1nclNsX1U3SXpFZm5KbndpbnJ0cVBublpod3J6R3hNZzNfLXhwcFliaUdad3lDWWN5OWlNM2x1NDBEZjAxUWQycUFRYzgzbzduZ2dGVGgxZU51eU5qMGFyV1hldDY0cVR1OE5nSUNYSHNjY1FQS3FNQ3M?oc=5\" target=\"_blank\">Nvidia Rallies As CEO Jensen Huang Joins Trump's China Trip</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">Investor's Business Daily</font>",
+      "relevance": "high",
+      "category": "regulatory",
+      "summary_1line": "CEO Jensen Huang joins Trump's China trip, signaling potential trade relief for Nvidia.",
+      "_scoring_source": "llm",
+      "ingested_at": "2026-05-14T05:38:29.411990Z",
+      "asset": "NVDA"
+    },
+    {
       "ticker": "MSFT",
       "headline": "Exclusive-Microsoft eyeing startup deals for life after OpenAI",
       "url": "https://finance.yahoo.com/news/exclusive-microsoft-eyeing-startup-deals-201449688.html?.tsrc=rss",
@@ -1579,20 +1607,6 @@
       "_scoring_source": "llm",
       "ingested_at": "2026-05-13T22:36:22.054023Z",
       "asset": "MSFT"
-    },
-    {
-      "ticker": "NVDA",
-      "headline": "Nvidia Stock Draws Attention As Culper Research Takes Short Position Over China Ties - Stocktwits",
-      "url": "https://news.google.com/rss/articles/CBMi4gFBVV95cUxQMUlHNWw0S3dWQ2NHbERpWHViTmNXTTl5YTVTTTdGUGtWYnFITW14c1pOUHhjWkdscEpZMzhfRW5ZdlQxVkNaSWg1LS1PczJVY3BvbjY5N1FfajlSeFNhN3FqOGhkNWJxX040ejIzU2xRNENnOFNTZ0tjUUpodFljaWljS0RsUUcweWZFb3F0clFQWVBZVG82UEdVX2FxeWpreGtSbzRmbzVBTVRNUEdPZlpXMTh4c0lTUGFGbHFhTVljSXJEWWV5MUFGMW1zTG9vRWk3RkVXTU1qM29KcVphVFRn?oc=5",
-      "timestamp": "Wed, 13 May 2026 20:04:00 GMT",
-      "source": "google_news",
-      "snippet": "<a href=\"https://news.google.com/rss/articles/CBMi4gFBVV95cUxQMUlHNWw0S3dWQ2NHbERpWHViTmNXTTl5YTVTTTdGUGtWYnFITW14c1pOUHhjWkdscEpZMzhfRW5ZdlQxVkNaSWg1LS1PczJVY3BvbjY5N1FfajlSeFNhN3FqOGhkNWJxX040ejIzU2xRNENnOFNTZ0tjUUpodFljaWljS0RsUUcweWZFb3F0clFQWVBZVG82UEdVX2FxeWpreGtSbzRmbzVBTVRNUEdPZlpXMTh4c0lTUGFGbHFhTVljSXJEWWV5MUFGMW1zTG9vRWk3RkVXTU1qM29KcVphVFRn?oc=5\" target=\"_blank\">Nvidia Stock Draws Attention As Culper Research Takes Short Position Over China Ties</a>&nbsp;&nbsp;<font color=\"#6f6f6f\">S",
-      "relevance": "high",
-      "category": "regulatory",
-      "summary_1line": "Culper Research shorts NVDA citing concerns over China business ties",
-      "_scoring_source": "llm",
-      "ingested_at": "2026-05-13T22:36:22.054023Z",
-      "asset": "NVDA"
     },
     {
       "ticker": "MELI",
@@ -1621,20 +1635,6 @@
       "_scoring_source": "llm",
       "ingested_at": "2026-05-13T22:36:22.054023Z",
       "asset": "OUST"
-    },
-    {
-      "ticker": "MSFT",
-      "headline": "Market Chatter: Microsoft Spent More Than $100 Billion on OpenAI Partnership, Executive Testifies",
-      "url": "https://finance.yahoo.com/news/market-chatter-microsoft-spent-more-185035569.html?.tsrc=rss",
-      "timestamp": "Wed, 13 May 2026 18:50:35 +0000",
-      "source": "yahoo_finance",
-      "snippet": "Microsoft (MSFT) has spent over $100 billion on its partnership with OpenAI, including investments,",
-      "relevance": "high",
-      "category": "corporate_action",
-      "summary_1line": "Microsoft confirmed $100B+ spent on OpenAI partnership via executive testimony",
-      "_scoring_source": "llm",
-      "ingested_at": "2026-05-13T22:36:22.054023Z",
-      "asset": "MSFT"
     }
   ],
   "technicals_by_asset": {
@@ -2048,7 +2048,7 @@
     "LLY": {
       "ticker": "LLY",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 35.207973,
+      "pe_ratio": 36.096306,
       "forward_pe": 22.93792,
       "pb_ratio": 29.090414,
       "ps_ratio": 12.537008,
@@ -2079,7 +2079,7 @@
     "CRM": {
       "ticker": "CRM",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 21.965563,
+      "pe_ratio": 21.288832,
       "forward_pe": 11.10243,
       "pb_ratio": 2.6050076,
       "ps_ratio": 3.267093,
@@ -2110,7 +2110,7 @@
     "META": {
       "ticker": "META",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 21.92852,
+      "pe_ratio": 22.422909,
       "forward_pe": 17.040588,
       "pb_ratio": 6.4223595,
       "ps_ratio": 7.2815695,
@@ -2141,7 +2141,7 @@
     "MSFT": {
       "ticker": "MSFT",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 24.119644,
+      "pe_ratio": 24.14839,
       "forward_pe": 20.936172,
       "pb_ratio": 7.264822,
       "ps_ratio": 9.457529,
@@ -2235,7 +2235,7 @@
     "NOW": {
       "ticker": "NOW",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 52.75758,
+      "pe_ratio": 51.81548,
       "forward_pe": 17.321384,
       "pb_ratio": 7.6547666,
       "ps_ratio": 6.4309006,
@@ -2332,20 +2332,20 @@
       "pe_ratio": null,
       "forward_pe": 25.53332,
       "pb_ratio": 1.327199,
-      "ps_ratio": 1.8038584,
+      "ps_ratio": 1.4420497,
       "peg_ratio": 2.61,
-      "gross_margin": 0.2491,
-      "operating_margin": -0.019919999,
-      "profit_margin": -0.04083,
-      "roe": -0.03786,
-      "roa": 0.00445,
-      "debt_to_equity": 40.327,
-      "current_ratio": 3.578,
-      "quick_ratio": 2.558,
-      "revenue_growth": 147.25,
+      "gross_margin": 0.24633,
+      "operating_margin": -0.117910005,
+      "profit_margin": -0.06021,
+      "roe": -0.06769,
+      "roa": -0.00733,
+      "debt_to_equity": 38.392,
+      "current_ratio": 3.333,
+      "quick_ratio": 2.423,
+      "revenue_growth": 127.163,
       "earnings_growth": null,
-      "fcf": -1380749952,
-      "operating_cashflow": 261400000,
+      "fcf": -1228572544,
+      "operating_cashflow": 295500000,
       "sector": "Industrials",
       "industry": "Industrial Distribution",
       "market_cap": 12342360064,
@@ -2458,7 +2458,7 @@
     "PGY": {
       "ticker": "PGY",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 12.073394,
+      "pe_ratio": 11.75,
       "forward_pe": 3.7580779,
       "pb_ratio": 2.0578578,
       "ps_ratio": 0.8204077,
@@ -2487,7 +2487,7 @@
     "MELI": {
       "ticker": "MELI",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 41.66444,
+      "pe_ratio": 41.14858,
       "forward_pe": 25.674337,
       "pb_ratio": 10.876149,
       "ps_ratio": 2.4899852,
@@ -2552,7 +2552,7 @@
     "MGNI": {
       "ticker": "MGNI",
       "as_of_date": "2026-05-14",
-      "pe_ratio": 13.173469,
+      "pe_ratio": 12.2952385,
       "forward_pe": 10.4959345,
       "pb_ratio": 2.0187647,
       "ps_ratio": 2.5588512,

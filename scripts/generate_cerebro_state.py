@@ -1717,7 +1717,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         written = _write_sanitized_real_snapshot(as_of)
         if written is not None:
-            print(f"  Sanitized real snapshot → {written}")
+            print(f"  Sanitized real snapshot -> {written}")
     except Exception as exc:  # noqa: BLE001 — never block cerebro write
         print(f"  Sanitized snapshot skipped (non-fatal): {exc}")
 
@@ -1726,7 +1726,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         written_b = _write_dashboard_bundle(as_of)
         if written_b is not None:
-            print(f"  Dashboard bundle → {written_b}")
+            print(f"  Dashboard bundle -> {written_b}")
     except Exception as exc:  # noqa: BLE001
         print(f"  Dashboard bundle skipped (non-fatal): {exc}")
 
