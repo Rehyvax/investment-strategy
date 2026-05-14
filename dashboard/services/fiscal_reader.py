@@ -21,6 +21,13 @@ from typing import Any
 LAB_ROOT = Path(__file__).resolve().parents[2]
 TRADES_FP = LAB_ROOT / "data" / "events" / "portfolios" / "real" / "trades.jsonl"
 SNAPSHOTS_DIR = LAB_ROOT / "data" / "snapshots" / "real"
+# Cloud fallbacks. Same files used across the other Cloud-aware
+# services. See thesis_browser.BUNDLE_FP for the bundle schema and
+# portfolio_reader.SANITIZED_REAL_SNAPSHOT_FP for the snapshot mirror.
+BUNDLE_FP = LAB_ROOT / "dashboard" / "data" / "dashboard_bundle.json"
+SANITIZED_SNAPSHOT_FP = (
+    LAB_ROOT / "dashboard" / "data" / "snapshot_real_latest.json"
+)
 
 # Spain savings-base IRPF brackets 2026 (CLAUDE.md §7).
 # Used for the rough withholding estimate on Pantalla 9. Real
@@ -42,54 +49,73 @@ class FiscalReader:
         self,
         trades_fp: Path | None = None,
         snapshots_dir: Path | None = None,
+        bundle_fp: Path | None = None,
+        sanitized_snapshot_fp: Path | None = None,
     ):
         self.trades_fp = trades_fp or TRADES_FP
         self.snapshots_dir = snapshots_dir or SNAPSHOTS_DIR
+        self.bundle_fp = bundle_fp or BUNDLE_FP
+        self.sanitized_snapshot_fp = (
+            sanitized_snapshot_fp or SANITIZED_SNAPSHOT_FP
+        )
+        self._bundle_cache: dict[str, Any] | None = None
+        self._all_trades_cache: list[dict[str, Any]] | None = None
+
+    # ------------------------------------------------------------------
+    def _load_bundle(self) -> dict[str, Any]:
+        if self._bundle_cache is not None:
+            return self._bundle_cache
+        if not self.bundle_fp.exists():
+            self._bundle_cache = {}
+            return self._bundle_cache
+        try:
+            self._bundle_cache = json.loads(
+                self.bundle_fp.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            self._bundle_cache = {}
+        return self._bundle_cache
+
+    def _all_trades(self) -> list[dict[str, Any]]:
+        """Returns every `trade` event. Primary source is the local
+        trades.jsonl; falls back to the Cloud bundle when that file is
+        absent."""
+        if self._all_trades_cache is not None:
+            return self._all_trades_cache
+        out: list[dict[str, Any]] = []
+        if self.trades_fp.exists():
+            with self.trades_fp.open("r", encoding="utf-8") as fp:
+                for line in fp:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        ev = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if ev.get("event_type") != "trade":
+                        continue
+                    out.append(ev)
+        if not out:
+            bundle = self._load_bundle()
+            for ev in bundle.get("trades_log", []) or []:
+                if isinstance(ev, dict) and ev.get("event_type") == "trade":
+                    out.append(ev)
+        self._all_trades_cache = out
+        return out
 
     # ------------------------------------------------------------------
     # Trade event iteration
     # ------------------------------------------------------------------
     def _iter_sells(self) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        if not self.trades_fp.exists():
-            return out
-        with self.trades_fp.open("r", encoding="utf-8") as fp:
-            for line in fp:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    ev = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if ev.get("event_type") != "trade":
-                    continue
-                if ev.get("side") != "sell":
-                    continue
-                if ev.get("realized_pnl_eur") is None:
-                    continue
-                out.append(ev)
-        return out
+        return [
+            ev for ev in self._all_trades()
+            if ev.get("side") == "sell"
+            and ev.get("realized_pnl_eur") is not None
+        ]
 
     def _iter_buys(self) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = []
-        if not self.trades_fp.exists():
-            return out
-        with self.trades_fp.open("r", encoding="utf-8") as fp:
-            for line in fp:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    ev = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if ev.get("event_type") != "trade":
-                    continue
-                if ev.get("side") != "buy":
-                    continue
-                out.append(ev)
-        return out
+        return [ev for ev in self._all_trades() if ev.get("side") == "buy"]
 
     # ------------------------------------------------------------------
     # Realized P&L breakdown
@@ -303,19 +329,31 @@ class FiscalReader:
 
     # ------------------------------------------------------------------
     def _latest_snapshot(self) -> dict[str, Any] | None:
-        if not self.snapshots_dir.exists():
-            return None
-        cands: list[Path] = []
-        for f in self.snapshots_dir.glob("*.json"):
-            if f.name.startswith("_"):
-                continue
-            stem = f.stem
-            if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
-                cands.append(f)
-        if not cands:
-            return None
-        cands.sort()
-        return json.loads(cands[-1].read_text(encoding="utf-8"))
+        if self.snapshots_dir.exists():
+            cands: list[Path] = []
+            for f in self.snapshots_dir.glob("*.json"):
+                if f.name.startswith("_"):
+                    continue
+                stem = f.stem
+                if len(stem) == 10 and stem[4] == "-" and stem[7] == "-":
+                    cands.append(f)
+            if cands:
+                cands.sort()
+                try:
+                    return json.loads(
+                        cands[-1].read_text(encoding="utf-8")
+                    )
+                except (OSError, json.JSONDecodeError):
+                    pass
+        # Cloud fallback: sanitized mirror of the latest snapshot.
+        if self.sanitized_snapshot_fp.exists():
+            try:
+                return json.loads(
+                    self.sanitized_snapshot_fp.read_text(encoding="utf-8")
+                )
+            except (OSError, json.JSONDecodeError):
+                return None
+        return None
 
 
 # ---------------------------------------------------------------------------

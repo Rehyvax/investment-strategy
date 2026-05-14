@@ -14,7 +14,62 @@ runs in unauthenticated mode with a visible warning.
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
+
 import streamlit as st
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _bootstrap_env_once() -> None:
+    """Populate `os.environ` from Streamlit secrets (Cloud) and `.env`
+    (local) before any module reads `ANTHROPIC_API_KEY`.
+
+    Idempotent: runs once at module import time. Streamlit re-uses the
+    Python process across pages within a session, so this fires a
+    single time per `streamlit run` lifecycle.
+
+    Priority (highest first):
+      1. Already-set `os.environ` value — never overridden.
+      2. Streamlit Cloud `st.secrets`:
+         - flat `ANTHROPIC_API_KEY = "..."`
+         - nested `[anthropic] api_key = "..."`
+      3. Local `.env` via python-dotenv (skipped if not installed)."""
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return
+
+    try:
+        secrets = st.secrets
+    except (FileNotFoundError, AttributeError):
+        secrets = None
+
+    if secrets is not None:
+        candidate = ""
+        try:
+            candidate = str(secrets.get("ANTHROPIC_API_KEY", "") or "")
+        except Exception:  # noqa: BLE001 — secrets may raise on bad TOML
+            candidate = ""
+        if not candidate:
+            try:
+                anthropic_block = secrets.get("anthropic", {})
+                if isinstance(anthropic_block, dict):
+                    candidate = str(anthropic_block.get("api_key", "") or "")
+            except Exception:  # noqa: BLE001
+                candidate = ""
+        if candidate:
+            os.environ["ANTHROPIC_API_KEY"] = candidate
+            return
+
+    try:
+        from dotenv import load_dotenv  # type: ignore
+
+        load_dotenv(_PROJECT_ROOT / ".env")
+    except ImportError:
+        pass
+
+
+_bootstrap_env_once()
 
 
 def _valid_tokens() -> list[str]:
@@ -24,9 +79,21 @@ def _valid_tokens() -> list[str]:
         return []
 
 
+_SESSION_FLAG = "dashboard_auth_ok"
+
+
 def check_auth() -> bool:
     """Returns True when the request is authenticated (or dev-mode).
-    Renders a login form otherwise."""
+    Renders a login form otherwise.
+
+    Auth persistence model (in priority order):
+      1. `st.session_state[_SESSION_FLAG]` — set once per browser tab.
+         Survives page navigation in the Streamlit sidebar. Cleared
+         when the user closes the tab.
+      2. `?token=` query param — backwards compatible with old links.
+         When valid, also sets the session flag so subsequent page
+         changes don't re-prompt.
+      3. Login form — falls back here on first hit without either."""
     valid = _valid_tokens()
 
     if not valid:
@@ -37,9 +104,13 @@ def check_auth() -> bool:
         )
         return True
 
+    if st.session_state.get(_SESSION_FLAG):
+        return True
+
     query_params = st.query_params
     token = query_params.get("token", "")
     if token and token in valid:
+        st.session_state[_SESSION_FLAG] = True
         return True
 
     st.title("Investment Dashboard")
@@ -49,6 +120,7 @@ def check_auth() -> bool:
     )
     if st.button("Acceder", key="auth_login_btn"):
         if token_input in valid:
+            st.session_state[_SESSION_FLAG] = True
             st.query_params["token"] = token_input
             st.rerun()
         else:

@@ -16,34 +16,54 @@ from typing import Any
 
 LAB_ROOT = Path(__file__).resolve().parents[2]
 SNAPSHOTS_DIR = LAB_ROOT / "data" / "snapshots"
+# Cloud fallback (only for portfolio_id == "real"). Mirrors the latest
+# dated snapshot under data/snapshots/real/, sanitized — see
+# scripts/generate_cerebro_state.py::_sanitize_real_snapshot.
+SANITIZED_REAL_FP = (
+    LAB_ROOT / "dashboard" / "data" / "snapshot_real_latest.json"
+)
 
 
 class PositionReader:
-    def __init__(self, snapshots_dir: Path | None = None):
+    def __init__(
+        self,
+        snapshots_dir: Path | None = None,
+        sanitized_real_fp: Path | None = None,
+    ):
         self.snapshots_dir = snapshots_dir or SNAPSHOTS_DIR
+        self.sanitized_real_fp = sanitized_real_fp or SANITIZED_REAL_FP
 
     def get_latest_snapshot(
         self, portfolio_id: str = "real"
     ) -> dict[str, Any] | None:
         pdir = self.snapshots_dir / portfolio_id
-        if not pdir.exists():
-            return None
-        snaps: list[Path] = []
-        for f in pdir.glob("*.json"):
-            if f.name.startswith("_"):
-                continue
-            stem = f.stem
-            if (
-                len(stem) == 10
-                and stem[4] == "-"
-                and stem[7] == "-"
-            ):
-                snaps.append(f)
-        if not snaps:
-            return None
-        snaps.sort()  # ascending by date string
-        with snaps[-1].open("r", encoding="utf-8") as fp:
-            return json.load(fp)
+        if pdir.exists():
+            snaps: list[Path] = []
+            for f in pdir.glob("*.json"):
+                if f.name.startswith("_"):
+                    continue
+                stem = f.stem
+                if (
+                    len(stem) == 10
+                    and stem[4] == "-"
+                    and stem[7] == "-"
+                ):
+                    snaps.append(f)
+            if snaps:
+                snaps.sort()  # ascending by date string
+                try:
+                    with snaps[-1].open("r", encoding="utf-8") as fp:
+                        return json.load(fp)
+                except (OSError, json.JSONDecodeError):
+                    pass
+        if portfolio_id == "real" and self.sanitized_real_fp.exists():
+            try:
+                return json.loads(
+                    self.sanitized_real_fp.read_text(encoding="utf-8")
+                )
+            except (OSError, json.JSONDecodeError):
+                return None
+        return None
 
     def get_position(
         self, ticker: str, portfolio_id: str = "real"

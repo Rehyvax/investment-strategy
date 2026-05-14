@@ -18,6 +18,7 @@ Out of scope on purpose (deferred until real Lightyear sample available):
 
 from __future__ import annotations
 
+import json
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -52,6 +53,48 @@ from trade_ingest import (  # type: ignore  # noqa: E402
 )
 
 
+# ----------------------------------------------------------------------
+# Cloud-aware data access.
+#
+# On Streamlit Cloud the gitignored `data/events/portfolios/real/`
+# tree is absent. Two consequences:
+#   1. `get_all_trades()` returns []  → history disappears.
+#   2. `persist_trade()` would crash trying to open a non-existent
+#      file for append.
+#
+# Detection rule: if the local trades dir doesn't exist we're in
+# Cloud / read-only mode. Histories come from the sanitized bundle;
+# the write form is replaced by an explanation banner.
+# ----------------------------------------------------------------------
+_LOCAL_TRADES_DIR = PROJECT_ROOT / "data" / "events" / "portfolios" / "real"
+_BUNDLE_FP = PROJECT_ROOT / "dashboard" / "data" / "dashboard_bundle.json"
+
+
+def _is_cloud_readonly() -> bool:
+    return not _LOCAL_TRADES_DIR.exists()
+
+
+def _bundle_trades() -> list[dict]:
+    if not _BUNDLE_FP.exists():
+        return []
+    try:
+        bundle = json.loads(_BUNDLE_FP.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return list(bundle.get("trades_log", []) or [])
+
+
+def _all_trades_with_fallback() -> list[dict]:
+    """Primary: local trades.jsonl via trade_ingest.get_all_trades().
+    Fallback: sanitized trades_log from dashboard_bundle.json. Both
+    return a list of event dicts; the consumer filters for
+    event_type == 'trade'."""
+    out = list(get_all_trades())
+    if not out:
+        out = _bundle_trades()
+    return out
+
+
 st.set_page_config(
     page_title="Operaciones",
     page_icon=":receipt:",
@@ -77,11 +120,19 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.info(
-    "Carga por CSV de Lightyear: pendiente de un sample real para no "
-    "sobre-ajustar el parser. Por ahora solo registro manual.",
-    icon="ℹ️",
-)
+if _is_cloud_readonly():
+    st.info(
+        "Modo Cloud (read-only). El registro manual de operaciones está "
+        "deshabilitado aquí; ejecuta el dashboard localmente para "
+        "registrar trades. Esta pantalla muestra el histórico sanitizado.",
+        icon="ℹ️",
+    )
+else:
+    st.info(
+        "Carga por CSV de Lightyear: pendiente de un sample real para no "
+        "sobre-ajustar el parser. Por ahora solo registro manual.",
+        icon="ℹ️",
+    )
 
 
 # ----------------------------------------------------------------------
@@ -90,7 +141,7 @@ st.info(
 def _render_sync_status() -> None:
     pr = PositionReader()
     snap = pr.get_latest_snapshot("real")
-    all_trades = get_all_trades()
+    all_trades = _all_trades_with_fallback()
     last_trade = None
     last_trade_date = None
     for ev in reversed(all_trades):
@@ -145,7 +196,106 @@ st.divider()
 
 
 # ----------------------------------------------------------------------
-# Block B — Manual entry form
+# Block D rendered BEFORE write blocks so Cloud mode can stop here
+# without rendering the form. LOCAL mode falls through to B+C.
+# ----------------------------------------------------------------------
+def _render_history_block() -> None:
+    st.markdown("### D. Histórico de operaciones")
+    all_trades = [
+        ev for ev in _all_trades_with_fallback()
+        if ev.get("event_type") == "trade"
+    ]
+    if not all_trades:
+        st.info("Aún no hay trades registrados.")
+        return
+    cF1, cF2, cF3 = st.columns(3)
+    with cF1:
+        ticker_filter = st.text_input(
+            "Filtrar por ticker (vacío = todos)", value="", key="hist_ticker"
+        ).upper().strip()
+    with cF2:
+        side_filter = st.selectbox(
+            "Side",
+            options=["(todos)", "buy", "sell"],
+            key="hist_side",
+        )
+    with cF3:
+        days_window = st.number_input(
+            "Últimos N días",
+            min_value=1,
+            max_value=3650,
+            value=90,
+            step=1,
+            key="hist_days",
+        )
+
+    filtered = []
+    cutoff = date.today().toordinal() - int(days_window)
+    for ev in all_trades:
+        td_str = ev.get("trade_date")
+        if isinstance(td_str, str):
+            try:
+                if date.fromisoformat(td_str).toordinal() < cutoff:
+                    continue
+            except ValueError:
+                continue
+        if ticker_filter and ev.get("ticker") != ticker_filter:
+            continue
+        if side_filter != "(todos)" and ev.get("side") != side_filter:
+            continue
+        filtered.append(ev)
+
+    rows = []
+    for ev in reversed(filtered):
+        rows.append(
+            {
+                "fecha": ev.get("trade_date", "—"),
+                "side": ev.get("side", "—"),
+                "ticker": ev.get("ticker", "—"),
+                "qty": ev.get("quantity", 0),
+                "precio": ev.get("price_native", 0),
+                "ccy": ev.get("currency", "—"),
+                "neto_eur": (
+                    ev.get("net_outflow_eur")
+                    or ev.get("proceeds_eur")
+                    or ev.get("gross_value_eur")
+                    or 0
+                ),
+                "pnl_eur": ev.get("realized_pnl_eur"),
+                "ingest": ev.get(
+                    "ingest_source",
+                    "legacy_event" if "user_executed" in ev else "—",
+                ),
+                "event_id": ev.get("event_id", "—"),
+            }
+        )
+    st.caption(
+        f"Mostrando {len(rows)} trades (de {len(all_trades)} totales)."
+    )
+    st.dataframe(rows, use_container_width=True, hide_index=True)
+
+
+_render_history_block()
+
+
+# In Cloud read-only mode there's nothing more to render — the manual
+# form and preview/persist blocks below are skipped via st.stop().
+if _is_cloud_readonly():
+    st.divider()
+    st.warning(
+        "Modo Cloud (read-only). Para registrar operaciones, ejecuta el "
+        "dashboard localmente en la máquina con acceso a "
+        "`data/events/portfolios/real/`.",
+        icon="🔒",
+    )
+    st.stop()
+
+
+st.divider()
+
+
+# ----------------------------------------------------------------------
+# Block B — Manual entry form (LOCAL only)
 # ----------------------------------------------------------------------
 st.markdown("### B. Registrar operación manual")
 st.caption(
@@ -361,80 +511,6 @@ if pending is not None:
             st.rerun()
 
 
-# ----------------------------------------------------------------------
-# Block D — Histórico filtrado
-# ----------------------------------------------------------------------
-st.divider()
-st.markdown("### D. Histórico de operaciones")
-
-all_trades = [
-    ev for ev in get_all_trades() if ev.get("event_type") == "trade"
-]
-if not all_trades:
-    st.info("Aún no hay trades registrados.")
-else:
-    cF1, cF2, cF3 = st.columns(3)
-    with cF1:
-        ticker_filter = st.text_input(
-            "Filtrar por ticker (vacío = todos)", value="", key="hist_ticker"
-        ).upper().strip()
-    with cF2:
-        side_filter = st.selectbox(
-            "Side",
-            options=["(todos)", "buy", "sell"],
-            key="hist_side",
-        )
-    with cF3:
-        days_window = st.number_input(
-            "Últimos N días",
-            min_value=1,
-            max_value=3650,
-            value=90,
-            step=1,
-            key="hist_days",
-        )
-
-    filtered = []
-    cutoff = date.today().toordinal() - int(days_window)
-    for ev in all_trades:
-        td_str = ev.get("trade_date")
-        if isinstance(td_str, str):
-            try:
-                if date.fromisoformat(td_str).toordinal() < cutoff:
-                    continue
-            except ValueError:
-                continue
-        if ticker_filter and ev.get("ticker") != ticker_filter:
-            continue
-        if side_filter != "(todos)" and ev.get("side") != side_filter:
-            continue
-        filtered.append(ev)
-
-    rows = []
-    for ev in reversed(filtered):
-        rows.append(
-            {
-                "fecha": ev.get("trade_date", "—"),
-                "side": ev.get("side", "—"),
-                "ticker": ev.get("ticker", "—"),
-                "qty": ev.get("quantity", 0),
-                "precio": ev.get("price_native", 0),
-                "ccy": ev.get("currency", "—"),
-                "neto_eur": (
-                    ev.get("net_outflow_eur")
-                    or ev.get("proceeds_eur")
-                    or ev.get("gross_value_eur")
-                    or 0
-                ),
-                "pnl_eur": ev.get("realized_pnl_eur"),
-                "ingest": ev.get(
-                    "ingest_source",
-                    "legacy_event" if "user_executed" in ev else "—",
-                ),
-                "event_id": ev.get("event_id", "—"),
-            }
-        )
-    st.caption(
-        f"Mostrando {len(rows)} trades (de {len(all_trades)} totales)."
-    )
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+# Block D was rendered earlier (right after Block A) so Cloud mode
+# could st.stop() before reaching the write blocks. Nothing more to
+# render here.

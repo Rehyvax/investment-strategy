@@ -30,8 +30,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM ---- Stage ONLY cerebro_state.json --------------------------------
+REM ---- Stage all PII-gated Cloud artifacts --------------------------
+REM   - cerebro_state.json        (always present after cron)
+REM   - snapshot_real_latest.json (added Fase 6E, may be absent on fresh
+REM     checkouts before the first cron run)
+REM   - dashboard_bundle.json     (added Fase 6E, same caveat)
+REM All three are gated by tests/test_pii_safety.py above. `if exist`
+REM guards prevent failures on fresh repos.
 git add dashboard/data/cerebro_state.json >> logs\auto_commit_cerebro.log 2>&1
+if exist dashboard\data\snapshot_real_latest.json (
+    git add dashboard/data/snapshot_real_latest.json >> logs\auto_commit_cerebro.log 2>&1
+)
+if exist dashboard\data\dashboard_bundle.json (
+    git add dashboard/data/dashboard_bundle.json >> logs\auto_commit_cerebro.log 2>&1
+)
 
 REM ---- Skip the commit if the file content didn't change -------------
 git diff --cached --quiet

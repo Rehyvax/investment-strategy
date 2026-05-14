@@ -1,19 +1,21 @@
 """PII safety regression tests.
 
-Runs against the committable artifacts (cerebro_state.json + .gitignore)
-to catch leaks BEFORE they hit a public push.
+Runs against the committable artifacts (cerebro_state.json,
+snapshot_real_latest.json, .gitignore) to catch leaks BEFORE they hit
+a public push.
 
 Triggered:
 - on every `pytest tests/`
 - by scripts/auto_commit_cerebro.bat as a hard gate before staging
 
-If any test fails, the auto-commit refuses to stage cerebro_state.json
-and exits with a non-zero status — the cron job leaves the bad version
+If any test fails, the auto-commit refuses to stage the artifacts and
+exits with a non-zero status — the cron job leaves the bad version
 local and surfaces an error in the log.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -21,6 +23,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 CEREBRO = ROOT / "dashboard" / "data" / "cerebro_state.json"
+SANITIZED_REAL_SNAPSHOT = (
+    ROOT / "dashboard" / "data" / "snapshot_real_latest.json"
+)
+DASHBOARD_BUNDLE = ROOT / "dashboard" / "data" / "dashboard_bundle.json"
 GITIGNORE = ROOT / ".gitignore"
 
 
@@ -68,6 +74,109 @@ def test_cerebro_state_no_pii() -> None:
                 f"{name}: {len(matches)} match(es), first={matches[:2]}"
             )
     assert not issues, "PII detected in cerebro_state.json:\n  " + "\n  ".join(issues)
+
+
+@pytest.mark.skipif(
+    not SANITIZED_REAL_SNAPSHOT.exists(),
+    reason="snapshot_real_latest.json missing — generate via daily cron first",
+)
+def test_sanitized_real_snapshot_no_pii() -> None:
+    """The committable sanitized snapshot must contain no PII /
+    credentials. Same critical-pattern set as cerebro_state.json."""
+    content = SANITIZED_REAL_SNAPSHOT.read_text(encoding="utf-8")
+    issues: list[str] = []
+    for name, pattern in CRITICAL_PATTERNS.items():
+        matches = re.findall(pattern, content)
+        if matches:
+            issues.append(
+                f"{name}: {len(matches)} match(es), first={matches[:2]}"
+            )
+    assert not issues, (
+        "PII detected in snapshot_real_latest.json:\n  "
+        + "\n  ".join(issues)
+    )
+
+
+@pytest.mark.skipif(
+    not SANITIZED_REAL_SNAPSHOT.exists(),
+    reason="snapshot_real_latest.json missing — generate via daily cron first",
+)
+def test_sanitized_real_snapshot_drops_isin() -> None:
+    """The sanitized snapshot must not contain ISIN values — the only
+    field that ties positions to a specific broker account."""
+    payload = json.loads(SANITIZED_REAL_SNAPSHOT.read_text(encoding="utf-8"))
+    positions = payload.get("positions", []) or []
+    leaked = [
+        p.get("ticker", "?")
+        for p in positions
+        if isinstance(p, dict) and p.get("isin")
+    ]
+    assert not leaked, (
+        "ISIN leaked in sanitized snapshot for tickers: " + ", ".join(leaked)
+    )
+    # Belt-and-braces: also check no ISIN-shaped string appears anywhere.
+    isin_pattern = r"\b[A-Z]{2}[A-Z0-9]{9}\d\b"
+    raw = SANITIZED_REAL_SNAPSHOT.read_text(encoding="utf-8")
+    matches = re.findall(isin_pattern, raw)
+    assert not matches, (
+        "ISIN-shaped strings leaked in sanitized snapshot: "
+        + ", ".join(matches[:5])
+    )
+
+
+@pytest.mark.skipif(
+    not DASHBOARD_BUNDLE.exists(),
+    reason="dashboard_bundle.json missing — generate via daily cron first",
+)
+def test_dashboard_bundle_no_pii() -> None:
+    """The cross-page bundle (theses + trades + Claude Autonomous)
+    must contain no PII / credentials."""
+    content = DASHBOARD_BUNDLE.read_text(encoding="utf-8")
+    issues: list[str] = []
+    for name, pattern in CRITICAL_PATTERNS.items():
+        matches = re.findall(pattern, content)
+        if matches:
+            issues.append(
+                f"{name}: {len(matches)} match(es), first={matches[:2]}"
+            )
+    assert not issues, (
+        "PII detected in dashboard_bundle.json:\n  "
+        + "\n  ".join(issues)
+    )
+
+
+@pytest.mark.skipif(
+    not DASHBOARD_BUNDLE.exists(),
+    reason="dashboard_bundle.json missing — generate via daily cron first",
+)
+def test_dashboard_bundle_drops_isin() -> None:
+    """No ISIN-shaped strings, no `isin` keys with values. Trades log
+    and thesis events both go through sanitization, so any leak is a
+    bug in scripts/generate_cerebro_state.py whitelist."""
+    payload = json.loads(DASHBOARD_BUNDLE.read_text(encoding="utf-8"))
+    leaked_keys: list[str] = []
+    # Trades log
+    for ev in payload.get("trades_log", []) or []:
+        if isinstance(ev, dict) and ev.get("isin"):
+            leaked_keys.append(f"trade:{ev.get('ticker', '?')}")
+    # Thesis events
+    for ticker, events in (
+        payload.get("theses_events_by_ticker", {}) or {}
+    ).items():
+        for ev in events or []:
+            if isinstance(ev, dict) and ev.get("isin"):
+                leaked_keys.append(f"thesis:{ticker}")
+    assert not leaked_keys, (
+        "ISIN leaked in dashboard bundle: " + ", ".join(leaked_keys[:10])
+    )
+    # Raw-text safety net.
+    isin_pattern = r"\b[A-Z]{2}[A-Z0-9]{9}\d\b"
+    raw = DASHBOARD_BUNDLE.read_text(encoding="utf-8")
+    matches = re.findall(isin_pattern, raw)
+    assert not matches, (
+        "ISIN-shaped strings leaked in dashboard bundle: "
+        + ", ".join(matches[:5])
+    )
 
 
 def test_gitignore_protects_env() -> None:
