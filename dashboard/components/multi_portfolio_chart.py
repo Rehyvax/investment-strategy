@@ -6,15 +6,15 @@ import plotly.graph_objects as go
 import streamlit as st
 
 INSTITUTIONAL_PALETTE = [
-    "#1E40AF",
+    "#3B82F6",
     "#0891B2",
-    "#15803D",
-    "#B91C1C",
-    "#A16207",
+    "#10B981",
+    "#EF4444",
+    "#F59E0B",
     "#6D28D9",
     "#0F766E",
-    "#64748B",
-    "#475569",
+    "#94A0B8",
+    "#94A0B8",
 ]
 
 
@@ -58,16 +58,16 @@ def render_chart(data: dict) -> None:
         margin=dict(l=40, r=20, t=20, b=40),
         plot_bgcolor="white",
         paper_bgcolor="white",
-        font=dict(family="Inter, sans-serif", size=12, color="#475569"),
+        font=dict(family="Inter, sans-serif", size=12, color="#94A0B8"),
         xaxis=dict(
-            gridcolor="#F1F5F9",
-            linecolor="#E2E8F0",
-            zerolinecolor="#E2E8F0",
+            gridcolor="#1C2333",
+            linecolor="#2A3142",
+            zerolinecolor="#2A3142",
         ),
         yaxis=dict(
-            gridcolor="#F1F5F9",
-            linecolor="#E2E8F0",
-            zerolinecolor="#E2E8F0",
+            gridcolor="#1C2333",
+            linecolor="#2A3142",
+            zerolinecolor="#2A3142",
         ),
         legend=dict(
             orientation="h",
@@ -90,20 +90,20 @@ def render_chart(data: dict) -> None:
 
     ranking_html = (
         '<div style="margin-top:8px;">'
-        '<div style="font-size:0.75rem; color:#64748B; text-transform:uppercase;'
+        '<div style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase;'
         ' letter-spacing:0.05em; font-weight:600; margin-bottom:8px;">Ranking</div>'
     )
     for i, series in enumerate(sorted_series, 1):
         delta = series["values"][-1] - 100
         color = (
-            "#15803D"
+            "#10B981"
             if delta > 0
-            else ("#B91C1C" if delta < 0 else "#64748B")
+            else ("#EF4444" if delta < 0 else "#94A0B8")
         )
         ranking_html += (
             f'<div style="display:flex; justify-content:space-between;'
-            f' padding:6px 0; border-bottom:1px solid #F1F5F9; font-size:0.875rem;">'
-            f'<span style="color:#475569;">{i}. {series["name"]}</span>'
+            f' padding:6px 0; border-bottom:1px solid #1C2333; font-size:0.875rem;">'
+            f'<span style="color:#94A0B8;">{i}. {series["name"]}</span>'
             f'<span style="font-family:\'JetBrains Mono\', monospace;'
             f' color:{color}; font-weight:600;">{delta:+.2f}%</span>'
             f"</div>"

@@ -46,7 +46,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    f"<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    f"<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     f"Última actualización {state['generated_at']}</p>",
     unsafe_allow_html=True,
 )
@@ -86,7 +86,7 @@ if series_list:
                 "name": s["name"],
                 "current": now,
                 "delta_pct": delta_pct,
-                "color": s.get("color", "#64748B"),
+                "color": s.get("color", "#94A0B8"),
             }
         )
     ranking_data.sort(key=lambda x: x["delta_pct"], reverse=True)
@@ -94,20 +94,20 @@ if series_list:
     rows_html = ""
     for i, item in enumerate(ranking_data, 1):
         if item["delta_pct"] > 0:
-            delta_color = "#15803D"
+            delta_color = "#10B981"
         elif item["delta_pct"] < 0:
-            delta_color = "#B91C1C"
+            delta_color = "#EF4444"
         else:
-            delta_color = "#64748B"
+            delta_color = "#94A0B8"
         is_user = item["name"] in ("real", "shadow")
-        row_bg = "#F8FAFC" if is_user else "white"
+        row_bg = "#131825" if is_user else "white"
         name_weight = "600" if is_user else "500"
         rows_html += (
             f'<tr style="background:{row_bg}; '
-            f'border-bottom:1px solid #F1F5F9;">'
-            f'<td style="padding:10px 12px; color:#64748B;'
+            f'border-bottom:1px solid #1C2333;">'
+            f'<td style="padding:10px 12px; color:#94A0B8;'
             f' font-size:0.875rem;">{i}</td>'
-            f'<td style="padding:10px 12px; color:#0F172A;'
+            f'<td style="padding:10px 12px; color:#E8ECF4;'
             f' font-weight:{name_weight};">{item["name"]}</td>'
             f'<td style="padding:10px 12px; text-align:right;'
             f" font-family:'JetBrains Mono', monospace; "
@@ -115,7 +115,7 @@ if series_list:
             f'{item["delta_pct"]:+.2f}%</td>'
             f'<td style="padding:10px 12px; text-align:right;'
             f" font-family:'JetBrains Mono', monospace; "
-            f'color:#475569;">{item["current"]:.2f}</td>'
+            f'color:#94A0B8;">{item["current"]:.2f}</td>'
             f"</tr>"
         )
 
@@ -123,20 +123,20 @@ if series_list:
         '<div class="institutional-card" style="padding:0;'
         " overflow:hidden;\">"
         '<table style="width:100%; border-collapse:collapse;">'
-        '<thead><tr style="border-bottom:1px solid #E2E8F0;'
-        ' background:#F8FAFC;">'
+        '<thead><tr style="border-bottom:1px solid #2A3142;'
+        ' background:#131825;">'
         '<th style="text-align:left; padding:8px 12px;'
-        " font-size:0.75rem; color:#64748B; font-weight:600;"
+        " font-size:0.75rem; color:#94A0B8; font-weight:600;"
         ' text-transform:uppercase; letter-spacing:0.05em;">#</th>'
         '<th style="text-align:left; padding:8px 12px;'
-        " font-size:0.75rem; color:#64748B; font-weight:600;"
+        " font-size:0.75rem; color:#94A0B8; font-weight:600;"
         ' text-transform:uppercase; letter-spacing:0.05em;">Cartera</th>'
         '<th style="text-align:right; padding:8px 12px;'
-        " font-size:0.75rem; color:#64748B; font-weight:600;"
+        " font-size:0.75rem; color:#94A0B8; font-weight:600;"
         ' text-transform:uppercase; letter-spacing:0.05em;">'
         "Delta desde T0</th>"
         '<th style="text-align:right; padding:8px 12px;'
-        " font-size:0.75rem; color:#64748B; font-weight:600;"
+        " font-size:0.75rem; color:#94A0B8; font-weight:600;"
         ' text-transform:uppercase; letter-spacing:0.05em;">'
         "Index actual</th>"
         f"</tr></thead><tbody>{rows_html}</tbody></table></div>"
@@ -156,19 +156,19 @@ if comp:
     src_badge = (
         "LLM" if src == "llm" else "DETERMINISTA"
     )
-    src_color = "#1E40AF" if src == "llm" else "#64748B"
+    src_color = "#3B82F6" if src == "llm" else "#94A0B8"
     st.markdown(
         f"""
-        <div class="institutional-card" style="border-left: 3px solid #1E40AF;">
+        <div class="institutional-card" style="border-left: 3px solid #3B82F6;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                 <span class="status-badge" style="background:{src_color}1A; color:{src_color}; border:1px solid {src_color}40;">{src_badge}</span>
-                <span style="font-size:0.75rem; color:#64748B;">Comparador del día: {comp.get('comparator_today', '—')}</span>
+                <span style="font-size:0.75rem; color:#94A0B8;">Comparador del día: {comp.get('comparator_today', '—')}</span>
             </div>
-            <h3 style="margin:0 0 12px 0; color:#0F172A; font-size:1.125rem; font-weight:600;">{comp.get('headline', '—')}</h3>
-            <p style="color:#475569; line-height:1.6; margin:0 0 16px 0; font-size:0.9375rem;">{comp.get('narrative', '—')}</p>
-            <div style="background:#DBEAFE; padding:12px; border-radius:6px;">
-                <span style="font-size:0.75rem; color:#1E40AF; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Acción</span>
-                <p style="margin:4px 0 0 0; color:#1E3A8A; font-weight:500; font-size:0.9375rem;">{comp.get('action', '—')}</p>
+            <h3 style="margin:0 0 12px 0; color:#E8ECF4; font-size:1.125rem; font-weight:600;">{comp.get('headline', '—')}</h3>
+            <p style="color:#94A0B8; line-height:1.6; margin:0 0 16px 0; font-size:0.9375rem;">{comp.get('narrative', '—')}</p>
+            <div style="background:#1E3A5F; padding:12px; border-radius:6px;">
+                <span style="font-size:0.75rem; color:#3B82F6; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Acción</span>
+                <p style="margin:4px 0 0 0; color:#1E3A5F; font-weight:500; font-size:0.9375rem;">{comp.get('action', '—')}</p>
             </div>
         </div>
         """,
@@ -183,12 +183,12 @@ else:
 st.markdown("<h2>Performance Attribution</h2>", unsafe_allow_html=True)
 st.markdown(
     """
-    <div class="institutional-card" style="background:#F8FAFC;">
+    <div class="institutional-card" style="background:#131825;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-            <span class="status-badge" style="background:#64748B1A; color:#64748B; border:1px solid #64748B40;">PENDIENTE</span>
-            <span style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em;">Requiere ≥30 días de histórico</span>
+            <span class="status-badge" style="background:#94A0B81A; color:#94A0B8; border:1px solid #94A0B840;">PENDIENTE</span>
+            <span style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em;">Requiere ≥30 días de histórico</span>
         </div>
-        <p style="margin:0; color:#475569; line-height:1.6; font-size:0.9375rem;">
+        <p style="margin:0; color:#94A0B8; line-height:1.6; font-size:0.9375rem;">
         Cuando esté disponible verás:
         <br>· Brinson-Fachler decomposition (stock picking vs sector allocation vs market timing)
         <br>· Fama-French 5 + Carhart momentum factor regression con alpha
@@ -318,26 +318,26 @@ if selected:
         vn = s_series["values"][-1]
         delta = ((vn - v0) / v0) * 100 if v0 else 0.0
         if delta > 0:
-            delta_color = "#15803D"
+            delta_color = "#10B981"
         elif delta < 0:
-            delta_color = "#B91C1C"
+            delta_color = "#EF4444"
         else:
-            delta_color = "#64748B"
+            delta_color = "#94A0B8"
     else:
         delta = 0.0
-        delta_color = "#64748B"
+        delta_color = "#94A0B8"
 
     st.markdown(
         f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                <h3 style="margin:0; color:#0F172A; font-size:1.125rem; font-weight:600;">{info['label']}</h3>
+                <h3 style="margin:0; color:#E8ECF4; font-size:1.125rem; font-weight:600;">{info['label']}</h3>
                 <span style="font-family:'JetBrains Mono', monospace; color:{delta_color}; font-weight:600; font-size:1.125rem;">{delta:+.2f}%</span>
             </div>
-            <p style="color:#475569; line-height:1.6; margin:0 0 12px 0; font-size:0.9375rem;"><strong>Estrategia:</strong> {info['description']}</p>
-            <div style="background:#F8FAFC; padding:12px; border-radius:6px;">
-                <span style="font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Por qué la diferencia con tu real</span>
-                <p style="margin:6px 0 0 0; color:#475569; font-size:0.9375rem; line-height:1.5;">{info['why_diff']}</p>
+            <p style="color:#94A0B8; line-height:1.6; margin:0 0 12px 0; font-size:0.9375rem;"><strong>Estrategia:</strong> {info['description']}</p>
+            <div style="background:#131825; padding:12px; border-radius:6px;">
+                <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Por qué la diferencia con tu real</span>
+                <p style="margin:6px 0 0 0; color:#94A0B8; font-size:0.9375rem; line-height:1.5;">{info['why_diff']}</p>
             </div>
         </div>
         """,

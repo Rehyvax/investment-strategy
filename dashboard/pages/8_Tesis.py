@@ -45,7 +45,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Histórico de tesis con timeline y filtros. Read-only.</p>",
     unsafe_allow_html=True,
 )
@@ -166,17 +166,17 @@ for asset in filtered:
                             align-items:center; flex-wrap:wrap; gap:8px;">
                     <div>
                         <span style="font-family:'JetBrains Mono', monospace;
-                                     font-size:1rem; font-weight:600; color:#0F172A;">
+                                     font-size:1rem; font-weight:600; color:#E8ECF4;">
                             {ticker}
                         </span>
                         <span style="margin-left:12px; font-size:0.85rem;
-                                     color:#64748B;">{sector} · {country}</span>
+                                     color:#94A0B8;">{sector} · {country}</span>
                     </div>
                     <div style="display:flex; gap:8px; align-items:center;
                                 flex-wrap:wrap;">
                         {status_badge_html}
                         {rec_badge_html}
-                        <span style="font-size:0.75rem; color:#64748B;">
+                        <span style="font-size:0.75rem; color:#94A0B8;">
                             confianza {conf} · {asset['n_events']} events ·
                             {asset['last_event_date']}
                         </span>
@@ -228,19 +228,19 @@ if selected:
             rec = ev.get("recommendation") or ev.get("recommendation_v2")
             if rec:
                 details_parts.append(
-                    f"<span style='color:#64748B;'>Rec:</span> "
+                    f"<span style='color:#94A0B8;'>Rec:</span> "
                     f"<strong>{rec}</strong>"
                 )
             cf = ev.get("confidence_calibrated")
             if cf is not None:
                 details_parts.append(
-                    f"<span style='color:#64748B;'>Conf:</span> "
+                    f"<span style='color:#94A0B8;'>Conf:</span> "
                     f"<strong>{_confidence_str(cf)}</strong>"
                 )
             tv = ev.get("thesis_version")
             if tv:
                 details_parts.append(
-                    f"<span style='color:#64748B;'>Version:</span> "
+                    f"<span style='color:#94A0B8;'>Version:</span> "
                     f"<strong>{tv}</strong>"
                 )
             details_html = " · ".join(details_parts)
@@ -253,7 +253,7 @@ if selected:
             if isinstance(summary, dict):
                 summary = ""
             summary_html = (
-                f"<p style='margin:8px 0 0 0; color:#475569; "
+                f"<p style='margin:8px 0 0 0; color:#94A0B8; "
                 f"font-size:0.9rem; line-height:1.5; "
                 f"white-space:pre-wrap;'>{str(summary)[:400]}</p>"
                 if summary else ""
@@ -268,10 +268,10 @@ if selected:
                             {badge_html}
                             <span style="margin-left:8px;
                                          font-family:'JetBrains Mono', monospace;
-                                         font-size:0.75rem; color:#64748B;">{ts}</span>
+                                         font-size:0.75rem; color:#94A0B8;">{ts}</span>
                         </div>
                         <span style="font-family:'JetBrains Mono', monospace;
-                                     font-size:0.7rem; color:#94A3B8;">{ev_id}</span>
+                                     font-size:0.7rem; color:#5C6378;">{ev_id}</span>
                     </div>
                     <div style="margin-top:6px; font-size:0.85rem;">{details_html}</div>
                     {summary_html}

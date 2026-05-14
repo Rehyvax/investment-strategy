@@ -156,7 +156,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Consultor conversacional con contexto de tu cartera + cerebro state.</p>",
     unsafe_allow_html=True,
 )
@@ -165,8 +165,8 @@ if not st.session_state.mercado_messages:
     st.markdown(
         """
         <div class="institutional-card" style="text-align:center; padding:32px;">
-            <h3 style="color:#475569; margin:0 0 12px 0;">Pregúntame cualquier cosa</h3>
-            <p style="color:#64748B; margin:0;">
+            <h3 style="color:#94A0B8; margin:0 0 12px 0;">Pregúntame cualquier cosa</h3>
+            <p style="color:#94A0B8; margin:0;">
                 Tengo contexto de tu snapshot actual, news, technicals, fundamentals,
                 tesis vigentes y debates recientes.
             </p>
@@ -176,8 +176,8 @@ if not st.session_state.mercado_messages:
     )
 
 for msg in st.session_state.mercado_messages:
-    role_color = "#1E40AF" if msg["role"] == "user" else "#475569"
-    role_bg = "#EFF6FF" if msg["role"] == "user" else "#F8FAFC"
+    role_color = "#3B82F6" if msg["role"] == "user" else "#94A0B8"
+    role_bg = "#1E3A5F" if msg["role"] == "user" else "#131825"
     role_label = "Tú" if msg["role"] == "user" else "Mercado-AI"
     st.markdown(
         f"""
@@ -186,7 +186,7 @@ for msg in st.session_state.mercado_messages:
             <div style="font-size:0.7rem; color:{role_color}; font-weight:600;
                         text-transform:uppercase; letter-spacing:0.05em;
                         margin-bottom:4px;">{role_label}</div>
-            <p style="margin:0; color:#0F172A; line-height:1.6;
+            <p style="margin:0; color:#E8ECF4; line-height:1.6;
                       white-space:pre-wrap;">{msg["content"]}</p>
         </div>
         """,

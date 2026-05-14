@@ -45,7 +45,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Tracking fiscal del portfolio real (España). Read-only.</p>",
     unsafe_allow_html=True,
 )
@@ -208,11 +208,11 @@ else:
                     <span style="font-family:'JetBrains Mono', monospace;
                                 font-weight:600;">{c['ticker']}</span>
                     {badge}
-                    <span style="font-size:0.75rem; color:#64748B;">
+                    <span style="font-size:0.75rem; color:#94A0B8;">
                         valor {format_currency_eur(c['current_value_eur'], 0)}
                     </span>
                 </div>
-                <p style="margin:0; color:#475569; font-size:0.9rem;">{c['reasoning']}</p>
+                <p style="margin:0; color:#94A0B8; font-size:0.9rem;">{c['reasoning']}</p>
             </div>
             """,
             unsafe_allow_html=True,

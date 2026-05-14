@@ -24,10 +24,10 @@ def render_portfolio_summary(data: dict) -> None:
         f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-                <span style="font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Estado</span>
+                <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Estado</span>
                 {health_badge}
             </div>
-            <p style="font-size:0.9375rem; color:#475569; margin:0;">{data['health_summary']}</p>
+            <p style="font-size:0.9375rem; color:#94A0B8; margin:0;">{data['health_summary']}</p>
         </div>
         """,
         unsafe_allow_html=True,

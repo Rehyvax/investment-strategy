@@ -165,7 +165,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Experimento epistemológico — Claude opera $50k paper en Alpaca. "
     "No es advice financiero ni cartera real.</p>",
     unsafe_allow_html=True,
@@ -349,7 +349,7 @@ else:
         markers=True,
     )
     fig.add_hline(
-        y=INITIAL_EQUITY_USD, line_dash="dot", line_color="#94A3B8",
+        y=INITIAL_EQUITY_USD, line_dash="dot", line_color="#5C6378",
         annotation_text="$50k inicial",
     )
     fig.update_layout(margin=dict(t=10, l=0, r=0, b=0), height=320)
@@ -382,12 +382,12 @@ else:
                 <div style="display:flex; gap:10px; flex-wrap:wrap;
                             align-items:center; margin-bottom:6px;">
                     {badge}
-                    <span style="font-size:0.75rem; color:#64748B;">
+                    <span style="font-size:0.75rem; color:#94A0B8;">
                         {rts} · decision_type {dtype} · alpha vs SPY
                         {alpha if alpha is not None else '—'}%
                     </span>
                 </div>
-                <p style='margin:0; color:#0F172A;
+                <p style='margin:0; color:#E8ECF4;
                           font-size:0.9rem; line-height:1.5;'>
                     {r.get('lesson') or '(sin lesson)'}
                 </p>

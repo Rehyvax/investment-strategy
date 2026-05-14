@@ -38,7 +38,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    f"<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    f"<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     f"Resumen del día · última actualización {state['generated_at']}</p>",
     unsafe_allow_html=True,
 )
@@ -69,30 +69,30 @@ def _render_risk_metrics(metrics: dict | None) -> None:
 
     def _color_sharpe(v: float) -> str:
         if v >= 1.0:
-            return "#15803D"
+            return "#10B981"
         if v >= 0.5:
-            return "#A16207"
-        return "#B91C1C"
+            return "#F59E0B"
+        return "#EF4444"
 
     def _color_sortino(v: float) -> str:
         if v >= 1.5:
-            return "#15803D"
+            return "#10B981"
         if v >= 0.7:
-            return "#A16207"
-        return "#B91C1C"
+            return "#F59E0B"
+        return "#EF4444"
 
     def _color_dd(v: float) -> str:
         if v > -5.0:
-            return "#15803D"
+            return "#10B981"
         if v > -10.0:
-            return "#A16207"
-        return "#B91C1C"
+            return "#F59E0B"
+        return "#EF4444"
 
     def _metric_card(label: str, value, color: str) -> str:
         display = "—" if value is None else value
         return (
             "<div style='text-align:center; padding:14px;'>"
-            f"<div style='font-size:0.75rem; color:#64748B; text-transform:uppercase;"
+            f"<div style='font-size:0.75rem; color:#94A0B8; text-transform:uppercase;"
             f" letter-spacing:0.05em; font-weight:600;'>{label}</div>"
             f"<div style='font-size:1.5rem; color:{color}; font-weight:600;"
             " font-family:\"JetBrains Mono\", monospace;'>"
@@ -105,17 +105,17 @@ def _render_risk_metrics(metrics: dict | None) -> None:
     mdd = metrics.get("max_drawdown_pct")
     sharpe_html = _metric_card(
         "Sharpe 90d", sharpe,
-        _color_sharpe(sharpe) if isinstance(sharpe, (int, float)) else "#64748B",
+        _color_sharpe(sharpe) if isinstance(sharpe, (int, float)) else "#94A0B8",
     )
     sortino_html = _metric_card(
         "Sortino 90d", sortino,
-        _color_sortino(sortino) if isinstance(sortino, (int, float)) else "#64748B",
+        _color_sortino(sortino) if isinstance(sortino, (int, float)) else "#94A0B8",
     )
-    calmar_html = _metric_card("Calmar 90d", calmar, "#0F172A")
+    calmar_html = _metric_card("Calmar 90d", calmar, "#E8ECF4")
     mdd_html = _metric_card(
         "Max DD 90d",
         f"{mdd:.2f}%" if isinstance(mdd, (int, float)) else None,
-        _color_dd(mdd) if isinstance(mdd, (int, float)) else "#64748B",
+        _color_dd(mdd) if isinstance(mdd, (int, float)) else "#94A0B8",
     )
     st.markdown(
         f"<div style='display:grid; grid-template-columns:repeat(4, 1fr); "

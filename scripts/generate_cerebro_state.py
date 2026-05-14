@@ -86,20 +86,23 @@ ALL_PORTFOLIOS = (
     "claude_autonomous",
 )
 
+# Aligned with dashboard/styles/palette.py CHART_COLORS — single source
+# of truth for per-portfolio colors across both the chart series builder
+# (here) and the dashboard side. Keep both in sync when adding portfolios.
 INSTITUTIONAL_PALETTE = {
-    "real": "#1E40AF",
-    "shadow": "#0891B2",
-    "quality": "#15803D",
-    "value": "#B91C1C",
-    "momentum": "#A16207",
-    "aggressive": "#6D28D9",
-    "conservative": "#0F766E",
-    "benchmark_passive": "#64748B",
-    "robo_advisor": "#475569",
-    "spy_benchmark": "#94A3B8",        # neutral grey — market reference
-    "indexa_10_benchmark": "#15803D",  # green — passive Indexa
-    "hrp_paper": "#7C3AED",            # violet — risk-parity sibling
-    "claude_autonomous": "#EA580C",    # orange — Claude's experiment
+    "real": "#3B82F6",                # azul primary
+    "shadow": "#8B5CF6",              # violeta
+    "quality": "#10B981",             # verde
+    "value": "#F59E0B",               # ámbar
+    "momentum": "#EC4899",            # rosa
+    "aggressive": "#EF4444",          # rojo
+    "conservative": "#14B8A6",        # teal
+    "benchmark_passive": "#6B7280",   # gris
+    "robo_advisor": "#A78BFA",        # lavanda
+    "spy_benchmark": "#FBBF24",       # dorado
+    "indexa_10_benchmark": "#06B6D4", # cyan
+    "hrp_paper": "#84CC16",           # lima
+    "claude_autonomous": "#F97316",   # naranja vibrante (destacar)
 }
 
 DEFAULT_VISIBLE = {

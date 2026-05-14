@@ -25,10 +25,10 @@ def render_market_status(data: dict) -> None:
         f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
-                <span style="font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Régimen actual</span>
+                <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Régimen actual</span>
                 {badge_html}
             </div>
-            <p style="font-size:0.9375rem; color:#0F172A; line-height:1.6; margin:0;">{data['explanation']}</p>
+            <p style="font-size:0.9375rem; color:#E8ECF4; line-height:1.6; margin:0;">{data['explanation']}</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -37,8 +37,8 @@ def render_market_status(data: dict) -> None:
     st.markdown(
         f"""
         <div class="institutional-card">
-            <div style="font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Flujo de capital</div>
-            <p style="font-size:0.9375rem; color:#0F172A; line-height:1.5; margin:0;">{data['money_flow']}</p>
+            <div style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Flujo de capital</div>
+            <p style="font-size:0.9375rem; color:#E8ECF4; line-height:1.5; margin:0;">{data['money_flow']}</p>
         </div>
         """,
         unsafe_allow_html=True,

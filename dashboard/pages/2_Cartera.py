@@ -54,7 +54,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    f"<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    f"<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     f"Snapshot {kpis.get('as_of_date') or '—'} · "
     f"{kpis['n_positions']} posiciones</p>",
     unsafe_allow_html=True,
@@ -224,8 +224,8 @@ def _row(name: str, weight: float, status: str) -> str:
     color = {"breach": "red", "warn": "yellow", "ok": "green"}.get(status, "neutral")
     return (
         f"<div style='display:flex; justify-content:space-between; "
-        f"padding:8px 0; border-bottom:1px solid #F1F5F9;'>"
-        f"<span style='color:#475569;'>{name}</span>"
+        f"padding:8px 0; border-bottom:1px solid #1C2333;'>"
+        f"<span style='color:#94A0B8;'>{name}</span>"
         f"<span>{status_badge(f'{weight:.1f}%', color)}</span></div>"
     )
 

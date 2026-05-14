@@ -36,11 +36,11 @@ def render_news_feed(news: list[dict]) -> None:
                 f"""
                 <div style="margin-bottom:8px;">
                     {relevance_badge}
-                    <span style="font-size:0.75rem; color:#64748B; margin-left:8px;">
+                    <span style="font-size:0.75rem; color:#94A0B8; margin-left:8px;">
                         {item['source']} · {ts_str}
                     </span>
                 </div>
-                <a href="{item['url']}" target="_blank" style="color:#1E40AF; text-decoration:none; font-size:0.9375rem;">
+                <a href="{item['url']}" target="_blank" style="color:#3B82F6; text-decoration:none; font-size:0.9375rem;">
                     Leer artículo completo →
                 </a>
                 """,

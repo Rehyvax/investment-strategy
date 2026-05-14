@@ -71,7 +71,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Registro manual de trades del portfolio real. La carga por CSV de "
     "Lightyear se añadirá cuando dispongamos de un export real.</p>",
     unsafe_allow_html=True,

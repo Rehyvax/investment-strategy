@@ -77,18 +77,18 @@ def render_recommendations(
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                         {action_badge}
-                        <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#0F172A; font-size:1.0625rem;">
+                        <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#E8ECF4; font-size:1.0625rem;">
                             {rec['asset']}
                         </span>
                         {source_badge}
                     </div>
                     {priority_badge}
                 </div>
-                <h3 style="font-size:1rem; color:#0F172A; margin:0 0 12px 0; font-weight:600;">{rec['headline']}</h3>
-                <p style="color:#475569; line-height:1.6; margin:0 0 16px 0; font-size:0.9375rem;">{rec['narrative']}</p>
-                <div style="background:#F1F5F9; padding:10px 12px; border-radius:6px; margin-bottom:12px;">
-                    <span style="font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Acción</span>
-                    <p style="margin:4px 0 0 0; color:#0F172A; font-size:0.9375rem;">{rec['action']}</p>
+                <h3 style="font-size:1rem; color:#E8ECF4; margin:0 0 12px 0; font-weight:600;">{rec['headline']}</h3>
+                <p style="color:#94A0B8; line-height:1.6; margin:0 0 16px 0; font-size:0.9375rem;">{rec['narrative']}</p>
+                <div style="background:#1C2333; padding:10px 12px; border-radius:6px; margin-bottom:12px;">
+                    <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Acción</span>
+                    <p style="margin:4px 0 0 0; color:#E8ECF4; font-size:0.9375rem;">{rec['action']}</p>
                 </div>
             </div>
             """,
@@ -164,9 +164,9 @@ def _render_chat_panel(
         if answer:
             st.markdown(
                 f"""
-                <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #1E40AF; margin-top:12px;">
-                    <span style="font-size:0.75rem; color:#1E40AF; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
-                    <p style="margin:8px 0 0 0; color:#0F172A; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
+                <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #3B82F6; margin-top:12px;">
+                    <span style="font-size:0.75rem; color:#3B82F6; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
+                    <p style="margin:8px 0 0 0; color:#E8ECF4; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,

@@ -18,14 +18,14 @@ def render_tax_alerts(alerts: list[dict]) -> None:
         expires = alert.get("expires", "—")
         st.markdown(
             f"""
-            <div class="institutional-card" style="border-left: 3px solid #A16207;">
+            <div class="institutional-card" style="border-left: 3px solid #F59E0B;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
                     {asset_badge}
-                    <span style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em;">
+                    <span style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em;">
                         {alert_type} · Expira {expires}
                     </span>
                 </div>
-                <p style="margin:0; color:#0F172A; font-size:0.9375rem; line-height:1.5;">{alert['message']}</p>
+                <p style="margin:0; color:#E8ECF4; font-size:0.9375rem; line-height:1.5;">{alert['message']}</p>
             </div>
             """,
             unsafe_allow_html=True,

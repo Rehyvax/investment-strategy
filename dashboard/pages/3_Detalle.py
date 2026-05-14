@@ -88,7 +88,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    "<p style='color:#64748B; margin-top:4px; font-size:0.9375rem;'>"
+    "<p style='color:#94A0B8; margin-top:4px; font-size:0.9375rem;'>"
     "Vista drill-down por ticker — tesis vigente, falsifiers, opinión, "
     "eventos próximos.</p>",
     unsafe_allow_html=True,
@@ -144,11 +144,11 @@ if position:
     pnl_eur = float(position.get("unrealized_pnl_eur", 0.0) or 0.0)
     pnl_pct = (pnl_eur / cost_basis_eur * 100.0) if cost_basis_eur else 0.0
     if pnl_eur > 0:
-        pnl_color = "#15803D"
+        pnl_color = "#10B981"
     elif pnl_eur < 0:
-        pnl_color = "#B91C1C"
+        pnl_color = "#EF4444"
     else:
-        pnl_color = "#64748B"
+        pnl_color = "#94A0B8"
     weight_pct = float(position.get("weight_pct", 0.0) or 0.0)
     quantity = float(position.get("quantity", 0.0) or 0.0)
     currency = position.get("currency", "USD")
@@ -158,27 +158,27 @@ if position:
         <div class="institutional-card">
             <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
                 <div>
-                    <h2 style="margin:0 0 4px 0; color:#0F172A; font-size:1.5rem; font-weight:700; font-family:'JetBrains Mono', monospace;">{selected}</h2>
+                    <h2 style="margin:0 0 4px 0; color:#E8ECF4; font-size:1.5rem; font-weight:700; font-family:'JetBrains Mono', monospace;">{selected}</h2>
                     <div style="display:flex; align-items:center; gap:8px;">{action_badge}</div>
                 </div>
                 <div style="text-align:right;">
-                    <div style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Posición actual</div>
-                    <div style="font-family:'JetBrains Mono', monospace; font-size:1.25rem; color:#0F172A; font-weight:600;">EUR {int(current_value):,}</div>
-                    <div style="font-size:0.875rem; color:#64748B;">{weight_pct:.2f}% NAV · {quantity:.4f} und.</div>
+                    <div style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Posición actual</div>
+                    <div style="font-family:'JetBrains Mono', monospace; font-size:1.25rem; color:#E8ECF4; font-weight:600;">EUR {int(current_value):,}</div>
+                    <div style="font-size:0.875rem; color:#94A0B8;">{weight_pct:.2f}% NAV · {quantity:.4f} und.</div>
                 </div>
             </div>
-            <div style="margin-top:16px; padding-top:16px; border-top:1px solid #E2E8F0; display:flex; gap:24px; flex-wrap:wrap;">
+            <div style="margin-top:16px; padding-top:16px; border-top:1px solid #2A3142; display:flex; gap:24px; flex-wrap:wrap;">
                 <div>
-                    <div style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Cost basis</div>
-                    <div style="font-family:'JetBrains Mono', monospace; color:#475569;">EUR {int(cost_basis_eur):,}</div>
+                    <div style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Cost basis</div>
+                    <div style="font-family:'JetBrains Mono', monospace; color:#94A0B8;">EUR {int(cost_basis_eur):,}</div>
                 </div>
                 <div>
-                    <div style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">P&amp;L latente</div>
+                    <div style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">P&amp;L latente</div>
                     <div style="font-family:'JetBrains Mono', monospace; color:{pnl_color}; font-weight:600;">{pnl_eur:+.0f} EUR ({pnl_pct:+.2f}%)</div>
                 </div>
                 <div>
-                    <div style="font-size:0.75rem; color:#64748B; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Currency</div>
-                    <div style="font-family:'JetBrains Mono', monospace; color:#475569;">{currency}</div>
+                    <div style="font-size:0.75rem; color:#94A0B8; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Currency</div>
+                    <div style="font-family:'JetBrains Mono', monospace; color:#94A0B8;">{currency}</div>
                 </div>
             </div>
         </div>
@@ -220,11 +220,11 @@ if authoritative_thesis:
         f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
-                <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#0F172A;">{version_label}</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#E8ECF4;">{version_label}</span>
                 {rec_badge}
-                <span style="font-size:0.75rem; color:#64748B;">{ts}</span>
+                <span style="font-size:0.75rem; color:#94A0B8;">{ts}</span>
             </div>
-            <p style="color:#475569; line-height:1.6; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{summary[:1500]}</p>
+            <p style="color:#94A0B8; line-height:1.6; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{summary[:1500]}</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -235,17 +235,17 @@ if authoritative_thesis:
     )
     if falsifiers:
         st.markdown(
-            "<div style='margin-top:16px;'><span style='font-size:0.75rem; color:#64748B; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;'>Falsifiers</span></div>",
+            "<div style='margin-top:16px;'><span style='font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;'>Falsifiers</span></div>",
             unsafe_allow_html=True,
         )
         for f in falsifiers:
             status = (f.get("status") or "unknown").lower()
             color = {
-                "inactive": "#15803D",
-                "halfway_activated": "#A16207",
-                "activated": "#B91C1C",
-                "active": "#B91C1C",
-            }.get(status, "#64748B")
+                "inactive": "#10B981",
+                "halfway_activated": "#F59E0B",
+                "activated": "#EF4444",
+                "active": "#EF4444",
+            }.get(status, "#94A0B8")
             icon = {
                 "inactive": "OK",
                 "halfway_activated": "1/2",
@@ -253,23 +253,23 @@ if authoritative_thesis:
                 "active": "X",
             }.get(status, "?")
             current_block = (
-                f"<div style='font-size:0.875rem; color:#64748B; margin-top:4px;'>Actual: {f['current']}</div>"
+                f"<div style='font-size:0.875rem; color:#94A0B8; margin-top:4px;'>Actual: {f['current']}</div>"
                 if f.get("current")
                 else ""
             )
             note_block = (
-                f"<div style='font-size:0.8125rem; color:#475569; margin-top:6px; line-height:1.5;'>{f['note'][:240]}</div>"
+                f"<div style='font-size:0.8125rem; color:#94A0B8; margin-top:6px; line-height:1.5;'>{f['note'][:240]}</div>"
                 if f.get("note")
                 else ""
             )
             st.markdown(
                 f"""
-                <div style="background:#F8FAFC; padding:10px 14px; border-radius:6px; margin-bottom:6px; border-left:3px solid {color};">
+                <div style="background:#131825; padding:10px 14px; border-radius:6px; margin-bottom:6px; border-left:3px solid {color};">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="color:{color}; font-size:0.875rem; font-weight:700; min-width:32px; text-align:center;">{icon}</span>
                         <div style="flex:1;">
-                            <div style="color:#0F172A; font-weight:500; font-size:0.9375rem;">{f.get('name', '?')}</div>
-                            <div style="color:#64748B; font-size:0.8125rem;">Threshold: {f.get('threshold', '—')} · Status: {status}</div>
+                            <div style="color:#E8ECF4; font-weight:500; font-size:0.9375rem;">{f.get('name', '?')}</div>
+                            <div style="color:#94A0B8; font-size:0.8125rem;">Threshold: {f.get('threshold', '—')} · Status: {status}</div>
                             {current_block}
                             {note_block}
                         </div>
@@ -305,19 +305,19 @@ if len(all_thesis_versions) > 1:
             descr, bcolor = "Recomendación BUY/ADD", "green"
         else:
             descr, bcolor = et.replace("_", " ").title(), "neutral"
-        marker_color = "#1E40AF" if is_latest else "#CBD5E1"
+        marker_color = "#3B82F6" if is_latest else "#3A4258"
         marker_size = "12px" if is_latest else "8px"
         rows.append(
             f"""
-            <div style="display:flex; gap:16px; padding:12px 0; border-bottom:1px solid #F1F5F9;">
+            <div style="display:flex; gap:16px; padding:12px 0; border-bottom:1px solid #1C2333;">
                 <div style="display:flex; flex-direction:column; align-items:center; padding-top:4px;">
                     <div style="width:{marker_size}; height:{marker_size}; border-radius:50%; background:{marker_color};"></div>
                 </div>
                 <div style="flex:1;">
                     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#0F172A;">{version_label}</span>
+                        <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:#E8ECF4;">{version_label}</span>
                         {status_badge(descr, bcolor)}
-                        <span style="font-size:0.75rem; color:#64748B;">{ts}</span>
+                        <span style="font-size:0.75rem; color:#94A0B8;">{ts}</span>
                     </div>
                 </div>
             </div>
@@ -396,11 +396,11 @@ if position and authoritative_thesis:
     if opinion:
         st.markdown(
             f"""
-            <div class="institutional-card" style="border-left: 3px solid #1E40AF;">
+            <div class="institutional-card" style="border-left: 3px solid #3B82F6;">
                 <div style="margin-bottom:10px;">
                     {status_badge("LLM", "blue")}
                 </div>
-                <p style="color:#0F172A; line-height:1.7; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{opinion}</p>
+                <p style="color:#E8ECF4; line-height:1.7; margin:0; font-size:0.9375rem; white-space:pre-wrap;">{opinion}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -414,9 +414,9 @@ if position and authoritative_thesis:
         )
         st.markdown(
             f"""
-            <div class="institutional-card" style="border-left: 3px solid #64748B;">
+            <div class="institutional-card" style="border-left: 3px solid #94A0B8;">
                 <div style="margin-bottom:10px;">{status_badge("DETERMINISTA", "neutral")}</div>
-                <p style="color:#475569; line-height:1.7; margin:0; font-size:0.9375rem;">{rule_text}</p>
+                <p style="color:#94A0B8; line-height:1.7; margin:0; font-size:0.9375rem;">{rule_text}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -464,12 +464,12 @@ if last_debate:
     extras = ""
     if key_evidence:
         extras += (
-            f"<div style='margin-top:8px; font-size:0.8125rem; color:#475569;'>"
+            f"<div style='margin-top:8px; font-size:0.8125rem; color:#94A0B8;'>"
             f"<b>Evidencia clave:</b> {key_evidence}</div>"
         )
     if key_trigger:
         extras += (
-            f"<div style='margin-top:4px; font-size:0.8125rem; color:#475569;'>"
+            f"<div style='margin-top:4px; font-size:0.8125rem; color:#94A0B8;'>"
             f"<b>Trigger a vigilar:</b> {key_trigger}</div>"
         )
 
@@ -479,20 +479,20 @@ if last_debate:
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
                 {verdict_badge}
                 {weight_badge}
-                <span style="font-size:0.75rem; color:#64748B;">
+                <span style="font-size:0.75rem; color:#94A0B8;">
                     {timestamp} · confianza {confidence} · trigger {trigger}
                 </span>
             </div>
-            <p style="color:#0F172A; line-height:1.6; margin:0 0 10px 0;
+            <p style="color:#E8ECF4; line-height:1.6; margin:0 0 10px 0;
                       white-space:pre-wrap;">{reasoning}</p>
             {extras}
-            <div style="margin-top:14px; background:#F1F5F9; padding:12px;
+            <div style="margin-top:14px; background:#1C2333; padding:12px;
                         border-radius:6px;">
-                <span style="font-size:0.75rem; color:#64748B; font-weight:600;
+                <span style="font-size:0.75rem; color:#94A0B8; font-weight:600;
                              text-transform:uppercase; letter-spacing:0.05em;">
                     Acción sugerida
                 </span>
-                <p style="margin:6px 0 0 0; color:#0F172A;">{suggested}</p>
+                <p style="margin:6px 0 0 0; color:#E8ECF4;">{suggested}</p>
             </div>
         </div>
         """,
@@ -517,8 +517,8 @@ if last_debate:
 else:
     st.markdown(
         f"""
-        <div class="institutional-card" style="background:#F8FAFC;">
-            <p style="margin:0; color:#475569;">
+        <div class="institutional-card" style="background:#131825;">
+            <p style="margin:0; color:#94A0B8;">
                 Sin debate registrado para {selected}. Se ejecuta semanalmente
                 o cuando hay news high relevance.
             </p>
@@ -605,7 +605,7 @@ else:
 if asset_fundamentals:
     st.markdown(
         "<div style='margin-top:18px;'><span style='font-size:0.75rem; "
-        "color:#64748B; font-weight:600; text-transform:uppercase; "
+        "color:#94A0B8; font-weight:600; text-transform:uppercase; "
         "letter-spacing:0.05em;'>Fundamentals (yfinance)</span></div>",
         unsafe_allow_html=True,
     )
@@ -640,7 +640,7 @@ if asset_fundamentals:
 if asset_technicals:
     st.markdown(
         "<div style='margin-top:18px;'><span style='font-size:0.75rem; "
-        "color:#64748B; font-weight:600; text-transform:uppercase; "
+        "color:#94A0B8; font-weight:600; text-transform:uppercase; "
         "letter-spacing:0.05em;'>Technicals</span></div>",
         unsafe_allow_html=True,
     )
@@ -690,18 +690,18 @@ if asset_news:
         summary = n.get("summary_1line") or n.get("headline", "")
         url = n.get("url", "#")
         link = (
-            f"<a href='{url}' target='_blank' style='color:#1E40AF; "
+            f"<a href='{url}' target='_blank' style='color:#3B82F6; "
             f"text-decoration:none; font-size:0.875rem;'>Leer →</a>"
             if url and url != "#" else ""
         )
         news_rows.append(
             f"""
-            <div style="padding:10px 0; border-bottom:1px solid #F1F5F9;">
+            <div style="padding:10px 0; border-bottom:1px solid #1C2333;">
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
                     {rbadge}
-                    <span style='font-size:0.75rem; color:#64748B;'>{category} · {source} · {ts_str}</span>
+                    <span style='font-size:0.75rem; color:#94A0B8;'>{category} · {source} · {ts_str}</span>
                 </div>
-                <div style='color:#0F172A; line-height:1.5; font-size:0.9375rem;'>{summary}</div>
+                <div style='color:#E8ECF4; line-height:1.5; font-size:0.9375rem;'>{summary}</div>
                 <div style='margin-top:4px;'>{link}</div>
             </div>
             """
@@ -733,15 +733,15 @@ if events:
             source_raw.replace("_", " ").title() if source_raw else ""
         )
         source_badge = (
-            f"<span style='font-size:0.6875rem; color:#94A3B8; margin-left:8px;'>[{source_label}]</span>"
+            f"<span style='font-size:0.6875rem; color:#5C6378; margin-left:8px;'>[{source_label}]</span>"
             if source_label
             else ""
         )
         rows.append(
             f"""
-            <div style="display:flex; gap:16px; padding:10px 0; border-bottom:1px solid #F1F5F9;">
-                <div style="font-family:'JetBrains Mono', monospace; color:#1E40AF; font-weight:600; min-width:110px;">{evt.get('date', '—')}</div>
-                <div style="color:#475569; line-height:1.5; flex:1;">{evt.get('event', '—')}{source_badge}</div>
+            <div style="display:flex; gap:16px; padding:10px 0; border-bottom:1px solid #1C2333;">
+                <div style="font-family:'JetBrains Mono', monospace; color:#3B82F6; font-weight:600; min-width:110px;">{evt.get('date', '—')}</div>
+                <div style="color:#94A0B8; line-height:1.5; flex:1;">{evt.get('event', '—')}{source_badge}</div>
             </div>
             """
         )
@@ -837,9 +837,9 @@ if st.session_state.get(f"chat_open_detalle_{selected}"):
         if answer:
             st.markdown(
                 f"""
-                <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #1E40AF; margin-top:12px;">
-                    <span style="font-size:0.75rem; color:#1E40AF; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
-                    <p style="margin:8px 0 0 0; color:#0F172A; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
+                <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #3B82F6; margin-top:12px;">
+                    <span style="font-size:0.75rem; color:#3B82F6; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
+                    <p style="margin:8px 0 0 0; color:#E8ECF4; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
