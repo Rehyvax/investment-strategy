@@ -40,6 +40,9 @@ dependencies = [
     "langchain-core>=1.0,<2",
     "langchain-anthropic>=1.0,<2",
 
+    # Alpaca paper trading (Claude Autonomous experiment)
+    "alpaca-py>=0.30,<1",
+
     # Quant & risk
     "scikit-learn>=1.5,<2",
     "statsmodels>=0.14,<1",
@@ -73,6 +76,12 @@ extra = [
 # issues on Windows. Skipping it on purpose — `scripts/technical_analyst.py`
 # implements the same indicators (MA, RSI, MACD, Bollinger) directly on
 # numpy/pandas with no dependency on pandas-ta.
+
+# HRP optimizer (López de Prado). Optional — `scripts/portfolios/hrp_portfolio.py`
+# falls back to inverse-volatility weighting when riskfolio is missing.
+hrp = [
+    "riskfolio-lib>=5.0",
+]
 
 dev = [
     "pytest>=8.2,<9",

@@ -45,6 +45,10 @@ from fundamentals_analyst import (  # noqa: E402
     compute_all_fundamentals_for_portfolio,
 )
 from agents.reflection import aggregate_brier  # noqa: E402
+from metrics.risk_adjusted import compute_all_metrics  # noqa: E402
+from agents.claude_autonomous_reflection import (  # noqa: E402
+    aggregate_autonomous_brier,
+)
 
 DEBATES_DIR_GEN = ROOT / "data" / "events" / "debates"
 
@@ -75,6 +79,11 @@ ALL_PORTFOLIOS = (
     "conservative",
     "benchmark_passive",
     "robo_advisor",
+    # Fase 6 additions — synthetic + Alpaca-backed comparators
+    "spy_benchmark",
+    "indexa_10_benchmark",
+    "hrp_paper",
+    "claude_autonomous",
 )
 
 INSTITUTIONAL_PALETTE = {
@@ -87,9 +96,18 @@ INSTITUTIONAL_PALETTE = {
     "conservative": "#0F766E",
     "benchmark_passive": "#64748B",
     "robo_advisor": "#475569",
+    "spy_benchmark": "#94A3B8",        # neutral grey — market reference
+    "indexa_10_benchmark": "#15803D",  # green — passive Indexa
+    "hrp_paper": "#7C3AED",            # violet — risk-parity sibling
+    "claude_autonomous": "#EA580C",    # orange — Claude's experiment
 }
 
-DEFAULT_VISIBLE = {"real", "benchmark_passive"}
+DEFAULT_VISIBLE = {
+    "real",
+    "benchmark_passive",
+    "spy_benchmark",
+    "claude_autonomous",
+}
 
 
 # ----------------------------------------------------------------------
@@ -1220,6 +1238,9 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
     )
     debates_by_asset = generate_debates_by_asset()
     brier = aggregate_brier(days=30)
+    autonomous_brier = aggregate_autonomous_brier(days=30)
+    risk_metrics_real_90d = compute_all_metrics("real", lookback_days=90)
+    risk_metrics_real_30d = compute_all_metrics("real", lookback_days=30)
     return {
         "generated_at": _now_iso_utc(),
         "next_evaluation": next_eval.isoformat().replace("+00:00", "Z"),
@@ -1237,6 +1258,10 @@ def generate_cerebro_state(as_of: date) -> dict[str, Any]:
         "debates_by_asset": debates_by_asset,
         "brier_score_30d": brier["score"],
         "brier_n_evaluations_30d": brier["n"],
+        "claude_autonomous_brier_30d": autonomous_brier["score"],
+        "claude_autonomous_n_evaluations_30d": autonomous_brier["n"],
+        "risk_metrics_real_90d": risk_metrics_real_90d,
+        "risk_metrics_real_30d": risk_metrics_real_30d,
         "upcoming_events_by_asset": generate_upcoming_events_by_asset(as_of),
     }
 

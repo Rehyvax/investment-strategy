@@ -50,6 +50,89 @@ if state.get("tax_alerts"):
     render_tax_alerts(state["tax_alerts"])
 
 render_chart(state["portfolios_chart_data"])
+
+
+# ----------------------------------------------------------------------
+# Block — Salud Riesgo-Retorno (Fase 6 Parte B)
+# ----------------------------------------------------------------------
+def _render_risk_metrics(metrics: dict | None) -> None:
+    st.markdown("<h2>Salud Riesgo-Retorno</h2>", unsafe_allow_html=True)
+    if not isinstance(metrics, dict):
+        st.caption("Métricas no disponibles aún.")
+        return
+    if metrics.get("status") == "insufficient_data":
+        st.info(
+            f"Métricas riesgo pendientes: {metrics.get('message', '')}. "
+            "Estarán disponibles cuando haya >=10 días de retornos consecutivos."
+        )
+        return
+
+    def _color_sharpe(v: float) -> str:
+        if v >= 1.0:
+            return "#15803D"
+        if v >= 0.5:
+            return "#A16207"
+        return "#B91C1C"
+
+    def _color_sortino(v: float) -> str:
+        if v >= 1.5:
+            return "#15803D"
+        if v >= 0.7:
+            return "#A16207"
+        return "#B91C1C"
+
+    def _color_dd(v: float) -> str:
+        if v > -5.0:
+            return "#15803D"
+        if v > -10.0:
+            return "#A16207"
+        return "#B91C1C"
+
+    def _metric_card(label: str, value, color: str) -> str:
+        display = "—" if value is None else value
+        return (
+            "<div style='text-align:center; padding:14px;'>"
+            f"<div style='font-size:0.75rem; color:#64748B; text-transform:uppercase;"
+            f" letter-spacing:0.05em; font-weight:600;'>{label}</div>"
+            f"<div style='font-size:1.5rem; color:{color}; font-weight:600;"
+            " font-family:\"JetBrains Mono\", monospace;'>"
+            f"{display}</div></div>"
+        )
+
+    sharpe = metrics.get("sharpe")
+    sortino = metrics.get("sortino")
+    calmar = metrics.get("calmar")
+    mdd = metrics.get("max_drawdown_pct")
+    sharpe_html = _metric_card(
+        "Sharpe 90d", sharpe,
+        _color_sharpe(sharpe) if isinstance(sharpe, (int, float)) else "#64748B",
+    )
+    sortino_html = _metric_card(
+        "Sortino 90d", sortino,
+        _color_sortino(sortino) if isinstance(sortino, (int, float)) else "#64748B",
+    )
+    calmar_html = _metric_card("Calmar 90d", calmar, "#0F172A")
+    mdd_html = _metric_card(
+        "Max DD 90d",
+        f"{mdd:.2f}%" if isinstance(mdd, (int, float)) else None,
+        _color_dd(mdd) if isinstance(mdd, (int, float)) else "#64748B",
+    )
+    st.markdown(
+        f"<div style='display:grid; grid-template-columns:repeat(4, 1fr); "
+        f"gap:8px;'>{sharpe_html}{sortino_html}{calmar_html}{mdd_html}</div>",
+        unsafe_allow_html=True,
+    )
+    cagr = metrics.get("cagr_estimated_pct")
+    n_obs = metrics.get("n_observations")
+    st.caption(
+        f"n={n_obs} días · CAGR estimado: "
+        f"{cagr if cagr is not None else '—'}%"
+    )
+
+
+_render_risk_metrics(state.get("risk_metrics_real_90d"))
+
+
 render_recommendations(state["recommendations"], state.get("portfolio_real", {}))
 render_comparative(state["comparative_analysis"])
 render_news_feed(state["news_feed"])

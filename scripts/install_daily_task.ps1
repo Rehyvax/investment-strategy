@@ -4,10 +4,11 @@
 # Creates (or replaces) the Windows Scheduled Tasks for the
 # investment lab daily automation:
 #
-#   Investment_News_Scan_Daily       Mon-Fri 07:30  news_scanner.py
-#   Investment_Cerebro_Daily         Mon-Fri 08:00  generate_cerebro_state.py
-#   Investment_Reflections_Daily     Mon-Fri 08:30  run_daily_reflections.py
-#   Investment_Nightly_Backup        Daily   23:00  backup_nightly.py
+#   Investment_News_Scan_Daily            Mon-Fri 07:30  news_scanner.py
+#   Investment_Cerebro_Daily              Mon-Fri 08:00  generate_cerebro_state.py
+#   Investment_Reflections_Daily          Mon-Fri 08:30  run_daily_reflections.py
+#   Investment_Claude_Autonomous_Daily    Mon-Fri 15:30  run_claude_autonomous_daily.py
+#   Investment_Nightly_Backup             Daily   23:00  backup_nightly.py
 #
 # The 30-min gaps between morning tasks let earlier tasks finish before
 # downstream consumers run. The nightly backup runs Mon-Sun (data
@@ -82,6 +83,13 @@ Install-WeeklyTask `
     -AtTime "8:30am" `
     -Days $weekdays `
     -Description "Daily reflection loop — realized vs predicted for debates from 7d ago."
+
+Install-WeeklyTask `
+    -Name "Investment_Claude_Autonomous_Daily" `
+    -BatPath "$PROJECT\scripts\run_claude_autonomous_daily.bat" `
+    -AtTime "3:30pm" `
+    -Days $weekdays `
+    -Description "Claude Autonomous paper-trading decision (Alpaca, post US open)."
 
 # NOTE: Investment_Weekly_Debates is intentionally not installed.
 # Use the dashboard sidebar 'Ejecutar barrido semanal' button to

@@ -136,6 +136,17 @@ scripts/*
 !scripts/mercado_ai.py
 !scripts/notifications.py
 !scripts/backup_nightly.py
+!scripts/run_claude_autonomous_daily.py
+# Whole-folder un-ignore for the new scripts subpackages — every module
+# under these dirs is committed code (no hardcoded data).
+!scripts/metrics/
+!scripts/metrics/*.py
+!scripts/benchmarks/
+!scripts/benchmarks/*.py
+!scripts/portfolios/
+!scripts/portfolios/*.py
+!scripts/alpaca/
+!scripts/alpaca/*.py
 !scripts/run_daily_cerebro.bat
 !scripts/run_daily_news_scanner.bat
 !scripts/run_weekly_debates.py
@@ -143,6 +154,7 @@ scripts/*
 !scripts/run_daily_reflections.py
 !scripts/run_daily_reflections.bat
 !scripts/run_nightly_backup.bat
+!scripts/run_claude_autonomous_daily.bat
 !scripts/install_daily_task.ps1
 # Whole-folder un-ignore for the agents package — every module under
 # scripts/agents/ is committed code (no hardcoded data).

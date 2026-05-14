@@ -21,12 +21,25 @@ Operational guarantees:
 
 from __future__ import annotations
 
+import json
+import logging
 import os
+from datetime import date, datetime, timezone
+from pathlib import Path
 from typing import Any
 
 MODEL = "claude-sonnet-4-6"
 MAX_TOKENS_NARRATIVE = 400
 MAX_TOKENS_OPINION = 600
+
+# Anthropic prompt-cache requires ≥1024 tokens per cached block.
+# Approximation: 4 chars ≈ 1 token (English) → 4_096 chars baseline.
+_CACHE_MIN_CHARS = 4_096
+
+_LAB_ROOT = Path(__file__).resolve().parent.parent
+_USAGE_DIR = _LAB_ROOT / "data" / "events" / "llm_usage"
+
+logger = logging.getLogger(__name__)
 
 
 def is_llm_available() -> bool:
@@ -51,6 +64,210 @@ def _get_client():
 # Public alias — analyst-side scripts (news_scanner, etc.) consume this
 # instead of the underscore-prefixed name.
 get_client = _get_client
+
+
+# ----------------------------------------------------------------------
+# Prompt caching wrapper (Fase 6 Parte A)
+# ----------------------------------------------------------------------
+def _cache_blocks_to_anthropic_format(
+    blocks: list[str] | None,
+) -> list[dict[str, Any]]:
+    """Convert a list of system-prompt fragments into Anthropic
+    `content` blocks. Each block ≥`_CACHE_MIN_CHARS` gets
+    `cache_control: {type: 'ephemeral'}`; smaller blocks pass through
+    as plain text. Returns a list ready for the `system=` kwarg."""
+    out: list[dict[str, Any]] = []
+    for blk in blocks or []:
+        if not blk:
+            continue
+        item: dict[str, Any] = {"type": "text", "text": blk}
+        if len(blk) >= _CACHE_MIN_CHARS:
+            item["cache_control"] = {"type": "ephemeral"}
+        out.append(item)
+    return out
+
+
+def _persist_usage(
+    response: Any,
+    *,
+    caller: str,
+    cached_blocks_count: int,
+) -> dict[str, int]:
+    """Append a structured usage entry to data/events/llm_usage/{YYYY-MM}.jsonl.
+    Returns the parsed usage dict for testing."""
+    usage = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+    }
+    raw = getattr(response, "usage", None)
+    if raw is not None:
+        usage["input_tokens"] = int(getattr(raw, "input_tokens", 0) or 0)
+        usage["output_tokens"] = int(getattr(raw, "output_tokens", 0) or 0)
+        usage["cache_creation_input_tokens"] = int(
+            getattr(raw, "cache_creation_input_tokens", 0) or 0
+        )
+        usage["cache_read_input_tokens"] = int(
+            getattr(raw, "cache_read_input_tokens", 0) or 0
+        )
+    try:
+        _USAGE_DIR.mkdir(parents=True, exist_ok=True)
+        f = _USAGE_DIR / f"{date.today().strftime('%Y-%m')}.jsonl"
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "caller": caller,
+            "model": MODEL,
+            "cached_blocks_supplied": cached_blocks_count,
+            **usage,
+        }
+        with f.open("a", encoding="utf-8") as fp:
+            fp.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except OSError as exc:  # noqa: BLE001
+        logger.warning(f"Could not persist LLM usage: {exc}")
+    return usage
+
+
+def call_llm_cached(
+    *,
+    system_prompt: str,
+    user_prompt: str,
+    cache_blocks: list[str] | None = None,
+    max_tokens: int = 600,
+    model: str = MODEL,
+    caller: str = "unknown",
+    extra_messages: list[dict[str, str]] | None = None,
+) -> str | None:
+    """Single-turn helper with Anthropic prompt caching.
+
+    `cache_blocks` are system-prompt fragments expected to be REUSED
+    across many calls (e.g. the agent's persona + the portfolio context).
+    Each fragment ≥1024 tokens is marked with `cache_control: ephemeral`
+    so Anthropic stores it for ~5 min and bills it at 0.1x on subsequent
+    reads (vs 1.25x on first write). The `system_prompt` always sits at
+    the END of the system blocks so caller-specific tweaks don't blow
+    the cache.
+
+    Returns the response text or None when the client is unavailable
+    or the API fails."""
+    client = _get_client()
+    if client is None:
+        return None
+    system_blocks = _cache_blocks_to_anthropic_format(cache_blocks)
+    if system_prompt:
+        system_blocks.append({"type": "text", "text": system_prompt})
+
+    messages: list[dict[str, Any]] = list(extra_messages or [])
+    messages.append({"role": "user", "content": user_prompt})
+
+    try:
+        response = client.messages.create(
+            model=model,
+            max_tokens=max_tokens,
+            system=system_blocks,
+            messages=messages,
+            extra_headers={
+                # The 2024-07-31 beta token enables prompt-caching billing
+                # on the Anthropic API; harmless when the model already
+                # supports caching natively (Sonnet 4.x).
+                "anthropic-beta": "prompt-caching-2024-07-31",
+            },
+        )
+        _persist_usage(
+            response, caller=caller,
+            cached_blocks_count=sum(
+                1 for b in system_blocks if "cache_control" in b
+            ),
+        )
+        block = response.content[0]
+        text = getattr(block, "text", None)
+        return text.strip() if text else None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"LLM call failed (caller={caller}): {exc}")
+        return None
+
+
+# ----------------------------------------------------------------------
+# Usage rollup (consumed by sidebar widget)
+# ----------------------------------------------------------------------
+def get_usage_today() -> dict[str, Any]:
+    """Returns aggregated usage for the current calendar day, including
+    cache_hit_rate (cache_read / (cache_read + cache_create)).
+
+    Used by the dashboard sidebar widget added in Pantalla 1."""
+    today_iso = date.today().isoformat()
+    f = _USAGE_DIR / f"{date.today().strftime('%Y-%m')}.jsonl"
+    if not f.exists():
+        return _empty_usage()
+    n_calls = 0
+    total = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+    }
+    try:
+        with f.open("r", encoding="utf-8") as fp:
+            for line in fp:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                ts = entry.get("ts", "")
+                if not ts.startswith(today_iso):
+                    continue
+                n_calls += 1
+                for k in total:
+                    total[k] += int(entry.get(k) or 0)
+    except OSError:
+        return _empty_usage()
+    cache_total = (
+        total["cache_creation_input_tokens"] + total["cache_read_input_tokens"]
+    )
+    cache_hit_rate = (
+        total["cache_read_input_tokens"] / cache_total
+        if cache_total > 0 else None
+    )
+    # Sonnet 4.6 list price (USD per 1M tokens): $3 input, $15 output.
+    # Cached writes cost 1.25x input; cached reads cost 0.1x input.
+    base_input = total["input_tokens"]
+    cache_write = total["cache_creation_input_tokens"]
+    cache_read = total["cache_read_input_tokens"]
+    cost_usd = (
+        (base_input * 3.0 / 1_000_000)
+        + (cache_write * 3.0 * 1.25 / 1_000_000)
+        + (cache_read * 3.0 * 0.10 / 1_000_000)
+        + (total["output_tokens"] * 15.0 / 1_000_000)
+    )
+    # Hypothetical cost if no caching had been used.
+    cost_no_cache_usd = (
+        ((base_input + cache_write + cache_read) * 3.0 / 1_000_000)
+        + (total["output_tokens"] * 15.0 / 1_000_000)
+    )
+    savings_usd = max(0.0, cost_no_cache_usd - cost_usd)
+    return {
+        "n_calls": n_calls,
+        **total,
+        "cache_hit_rate": cache_hit_rate,
+        "estimated_cost_usd": round(cost_usd, 4),
+        "estimated_savings_usd": round(savings_usd, 4),
+    }
+
+
+def _empty_usage() -> dict[str, Any]:
+    return {
+        "n_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_hit_rate": None,
+        "estimated_cost_usd": 0.0,
+        "estimated_savings_usd": 0.0,
+    }
 
 
 def _classify_vix(vix: float | None) -> str:
