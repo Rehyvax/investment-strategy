@@ -89,10 +89,14 @@ def _bootstrap_env_once() -> None:
       3. Local `.env` via python-dotenv (only if ANTHROPIC_API_KEY is
          still missing — local devs want .env to win over absent
          secrets, but Cloud values should win over absent .env)."""
+    # Streamlit's secrets accessor raises StreamlitSecretNotFoundError
+    # (inherits FileNotFoundError on recent versions, AttributeError on
+    # older ones, or RuntimeError if the runtime context is missing).
+    # Catch broadly so a misbehaving secrets layer never breaks auth.
     secrets = None
     try:
         secrets = st.secrets
-    except (FileNotFoundError, AttributeError):
+    except Exception:  # noqa: BLE001 — defensive across Streamlit versions
         pass
 
     if secrets is not None:
@@ -100,6 +104,15 @@ def _bootstrap_env_once() -> None:
             _walk_secrets_into_env(secrets)
         except Exception:  # noqa: BLE001 — defensive: never break the page
             pass
+        # Fallback: materialize via `dict(secrets)` in case the live
+        # Secrets object misbehaves on `.items()` (observed on some
+        # streamlit-cloud snapshots). If `dict()` itself fails we are
+        # already covered by the recursive walker above.
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            try:
+                _walk_secrets_into_env(dict(secrets))
+            except Exception:  # noqa: BLE001
+                pass
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         try:

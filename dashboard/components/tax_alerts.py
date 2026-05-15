@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from styles import status_badge
+from styles import flat_html, status_badge
 
 
 def render_tax_alerts(alerts: list[dict]) -> None:
@@ -17,7 +17,7 @@ def render_tax_alerts(alerts: list[dict]) -> None:
         alert_type = alert.get("alert_type", "alert").replace("_", " ").title()
         expires = alert.get("expires", "—")
         st.markdown(
-            f"""
+            flat_html(f"""
             <div class="institutional-card" style="border-left: 3px solid #F59E0B;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
                     {asset_badge}
@@ -27,6 +27,6 @@ def render_tax_alerts(alerts: list[dict]) -> None:
                 </div>
                 <p style="margin:0; color:#E8ECF4; font-size:0.9375rem; line-height:1.5;">{alert['message']}</p>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from styles import status_badge
+from styles import flat_html, status_badge
 
 REGIME_LABELS = {
     "risk_on_strong": "Risk-On Fuerte",
@@ -22,7 +22,7 @@ def render_market_status(data: dict) -> None:
     badge_html = status_badge(regime_label, data["regime_color"])
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                 <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Régimen actual</span>
@@ -30,17 +30,17 @@ def render_market_status(data: dict) -> None:
             </div>
             <p style="font-size:0.9375rem; color:#E8ECF4; line-height:1.6; margin:0;">{data['explanation']}</p>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Flujo de capital</div>
             <p style="font-size:0.9375rem; color:#E8ECF4; line-height:1.5; margin:0;">{data['money_flow']}</p>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 

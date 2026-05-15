@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from styles import format_currency_eur, format_percent, status_badge
+from styles import flat_html, format_currency_eur, format_percent, status_badge
 
 
 def render_portfolio_summary(data: dict) -> None:
@@ -21,7 +21,7 @@ def render_portfolio_summary(data: dict) -> None:
         data["health_status"].upper(), data["health_status"]
     )
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
                 <span style="font-size:0.75rem; color:#94A0B8; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Estado</span>
@@ -29,7 +29,7 @@ def render_portfolio_summary(data: dict) -> None:
             </div>
             <p style="font-size:0.9375rem; color:#94A0B8; margin:0;">{data['health_summary']}</p>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 

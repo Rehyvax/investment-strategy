@@ -6,7 +6,7 @@ from datetime import datetime
 
 import streamlit as st
 
-from styles import status_badge
+from styles import flat_html, status_badge
 
 RELEVANCE_STATUS = {"high": "red", "medium": "yellow", "low": "neutral"}
 
@@ -33,7 +33,7 @@ def render_news_feed(news: list[dict]) -> None:
             f"{item['asset']} — {item['headline']}", expanded=False
         ):
             st.markdown(
-                f"""
+                flat_html(f"""
                 <div style="margin-bottom:8px;">
                     {relevance_badge}
                     <span style="font-size:0.75rem; color:#94A0B8; margin-left:8px;">
@@ -43,6 +43,6 @@ def render_news_feed(news: list[dict]) -> None:
                 <a href="{item['url']}" target="_blank" style="color:#3B82F6; text-decoration:none; font-size:0.9375rem;">
                     Leer artículo completo →
                 </a>
-                """,
+                """),
                 unsafe_allow_html=True,
             )

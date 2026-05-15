@@ -1692,6 +1692,151 @@ def _write_dashboard_bundle(as_of: date) -> Path | None:
     return DASHBOARD_BUNDLE_OUT
 
 
+def _refresh_real_snapshot_if_needed(as_of: date) -> None:
+    """Step 0 of the daily cron: write data/snapshots/real/{as_of}.json
+    by carrying the latest snapshot's composition forward and refreshing
+    only the prices + FX. Idempotent — skips if today's file exists.
+
+    Why a price-refresh, not an event-stream rebuild:
+    --------------------------------------------------
+    The trade log contains `portfolio_reconciliation` bulk-rotation
+    events (e.g. 2026-05-14) where the user executed multiple buys /
+    sells in Lightyear over a short window and approved a NAV / position
+    delta WITHOUT reconstructing individual sell events. A
+    `SnapshotRebuilder.replay()` from the raw trade stream would NOT
+    honor those reconciliations — it would resurrect already-exited
+    tickers (AXON, MA, KTOS, IREN at the time of writing) and miscompute
+    cash. The conservative, audit-safe approach is therefore to inherit
+    the prior snapshot's composition (ticker, quantity, cost_basis_*)
+    and only repaint mark-to-market fields with today's market data.
+
+    What is refreshed:
+      - current_price_native via yfinance (one Ticker.history call per
+        position; fails silently per-ticker and keeps the prior price).
+      - fx_rate_usd_per_eur via the EURUSD=X pair (failure → carry).
+      - current_value_eur, unrealized_pnl_eur, cost_basis_eur,
+        nav_total_eur, equity_value_total_eur — all derived from the
+        refreshed prices + FX, never touching the audit fields above.
+
+    Non-fatal: yfinance flakes or rate-limits must never block the rest
+    of the cron — the older snapshot stays on disk for fallback."""
+    today_path = SNAPSHOTS_DIR / "real" / f"{as_of.isoformat()}.json"
+    if today_path.exists():
+        return
+
+    real_dir = SNAPSHOTS_DIR / "real"
+    if not real_dir.exists():
+        print("  Real snapshot refresh skipped: no prior snapshot directory.")
+        return
+    priors = sorted(
+        f for f in real_dir.glob("*.json")
+        if not f.name.startswith("_")
+        and len(f.stem) == 10 and f.stem[4] == "-" and f.stem[7] == "-"
+    )
+    if not priors:
+        print("  Real snapshot refresh skipped: no prior dated snapshot.")
+        return
+
+    try:
+        with priors[-1].open("r", encoding="utf-8") as fp:
+            base = json.load(fp)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"  Real snapshot refresh skipped: cannot read {priors[-1].name}: {exc}")
+        return
+
+    try:
+        import yfinance as yf  # type: ignore
+    except ImportError:
+        print("  Real snapshot refresh skipped: yfinance not installed.")
+        return
+
+    # Fresh FX (EUR/USD) — falls back to the prior snapshot's rate when
+    # yfinance is unreachable so the rest of the refresh can proceed.
+    fx_usd_per_eur = float(base.get("fx_rate_usd_per_eur") or 1.0)
+    try:
+        start = (as_of - timedelta(days=5)).isoformat()
+        end = (as_of + timedelta(days=1)).isoformat()
+        fx_hist = yf.Ticker("EURUSD=X").history(start=start, end=end)
+        if fx_hist is not None and not fx_hist.empty:
+            fx_usd_per_eur = float(fx_hist["Close"].iloc[-1])
+    except Exception:  # noqa: BLE001 — keep base FX on any yfinance error
+        pass
+    fx_eur_per_usd = (1.0 / fx_usd_per_eur) if fx_usd_per_eur > 0 else 1.0
+
+    refreshed_positions: list[dict[str, Any]] = []
+    fetch_failures: list[str] = []
+    for pos in base.get("positions", []) or []:
+        new_pos = dict(pos)
+        ticker = pos.get("ticker") or ""
+        qty = float(pos.get("quantity") or 0.0)
+        currency = pos.get("currency", "USD")
+        price = float(pos.get("current_price_native") or 0.0)
+        # Fresh close, with graceful per-ticker fallback to prior price.
+        try:
+            start = (as_of - timedelta(days=5)).isoformat()
+            end = (as_of + timedelta(days=1)).isoformat()
+            hist = yf.Ticker(ticker).history(start=start, end=end)
+            if hist is not None and not hist.empty:
+                price = float(hist["Close"].iloc[-1])
+        except Exception:  # noqa: BLE001 — keep prior price for this ticker
+            fetch_failures.append(ticker)
+        # Mark-to-market in native and EUR.
+        fx_to_eur = (
+            fx_eur_per_usd if currency == "USD"
+            else 1.0 if currency == "EUR"
+            else float(pos.get("fx_to_eur") or 1.0)
+        )
+        current_value_native = round(price * qty, 4)
+        cost_per_share = float(pos.get("cost_basis_per_share_native") or 0.0)
+        cost_basis_native = round(cost_per_share * qty, 4)
+        current_value_eur = round(current_value_native * fx_to_eur, 4)
+        cost_basis_eur = round(cost_basis_native * fx_to_eur, 4)
+        new_pos.update({
+            "current_price_native": round(price, 4),
+            "current_value_native": current_value_native,
+            "cost_basis_native": cost_basis_native,
+            "current_value_eur": current_value_eur,
+            "cost_basis_eur": cost_basis_eur,
+            "unrealized_pnl_eur": round(current_value_eur - cost_basis_eur, 4),
+            "fx_rate_usd_per_eur": fx_usd_per_eur,
+            "fx_to_eur": fx_to_eur,
+        })
+        refreshed_positions.append(new_pos)
+
+    equity_eur = round(sum(p["current_value_eur"] for p in refreshed_positions), 4)
+    cost_total_eur = round(sum(p["cost_basis_eur"] for p in refreshed_positions), 4)
+    cash_eur = float(base.get("cash_eur") or 0.0)
+    nav_eur = round(equity_eur + cash_eur, 4)
+    new_snap = dict(base)
+    new_snap.update({
+        "as_of_date": as_of.isoformat(),
+        "as_of_ts": datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "nav_total_eur": nav_eur,
+        "equity_value_total_eur": equity_eur,
+        "cost_basis_total_eur": cost_total_eur,
+        "unrealized_pnl_total_eur": round(equity_eur - cost_total_eur, 4),
+        "fx_rate_date": as_of.isoformat(),
+        "fx_rate_usd_per_eur": fx_usd_per_eur,
+        "fx_rate_usd_to_eur": fx_eur_per_usd,
+        "fx_source": "yfinance_EURUSD",
+        "positions": refreshed_positions,
+        "price_refresh_source": "yfinance_close",
+        "price_refresh_failures": fetch_failures,
+        "carried_from_snapshot": priors[-1].name,
+    })
+
+    try:
+        _atomic_write(today_path, new_snap)
+        print(
+            f"  Real snapshot {as_of.isoformat()} created: NAV €{nav_eur:,.2f} "
+            f"cash €{cash_eur:,.2f} pos={len(refreshed_positions)} "
+            f"(carried from {priors[-1].name}, "
+            f"price fetch failures: {len(fetch_failures)})"
+        )
+    except Exception as exc:  # noqa: BLE001 — never block cerebro
+        print(f"  Real snapshot refresh skipped (write failed): {exc}")
+
+
 def main(argv: list[str] | None = None) -> int:
     _load_env_file()
     p = argparse.ArgumentParser(description="Generate cerebro_state.json.")
@@ -1703,6 +1848,9 @@ def main(argv: list[str] | None = None) -> int:
     as_of = (
         date.fromisoformat(args.date) if args.date else date.today()
     )
+    # Step 0: refresh today's real snapshot from the event stream + fresh
+    # market data before any downstream module reads from disk.
+    _refresh_real_snapshot_if_needed(as_of)
     state = generate_cerebro_state(as_of)
 
     if args.dry_run:

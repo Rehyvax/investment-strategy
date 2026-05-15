@@ -326,3 +326,15 @@ def format_percent(
         return "—"
     sign = "+" if show_sign and value > 0 else ""
     return f"{sign}{value:.{decimals}f}%"
+
+
+# Explicit public surface — guards against accidental rename and makes
+# `from styles import <name>` failures surface earlier on import.
+__all__ = [
+    "CUSTOM_CSS",
+    "flat_html",
+    "format_currency_eur",
+    "format_percent",
+    "inject_css",
+    "status_badge",
+]

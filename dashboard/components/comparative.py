@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import streamlit as st
 
+from styles import flat_html
+
 
 def render_comparative(data: dict) -> None:
     st.markdown("<h2>Análisis Comparativo</h2>", unsafe_allow_html=True)
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card" style="border-left: 3px solid #3B82F6;">
             <h3 style="margin:0 0 12px 0; color:#E8ECF4; font-size:1.125rem; font-weight:600;">{data['headline']}</h3>
             <p style="color:#94A0B8; line-height:1.6; margin:0 0 16px 0; font-size:0.9375rem;">{data['narrative']}</p>
@@ -24,6 +26,6 @@ def render_comparative(data: dict) -> None:
                 <p style="margin:4px 0 0 0; color:#1E3A5F; font-weight:500; font-size:0.9375rem;">{data['action']}</p>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )

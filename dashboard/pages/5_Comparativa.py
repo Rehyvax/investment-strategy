@@ -24,6 +24,7 @@ from auth import check_auth  # noqa: E402
 from components.multi_portfolio_chart import render_chart  # noqa: E402
 from services.cerebro_state import load_cerebro_state  # noqa: E402
 from styles import (  # noqa: E402
+    flat_html,
     format_percent,
     inject_css,
 )
@@ -82,15 +83,37 @@ if series_list:
         t0 = vals[0]
         now = vals[-1]
         delta_pct = ((now - t0) / t0) * 100 if t0 else 0.0
+        # A portfolio with a single dated snapshot produces a flat
+        # 100→100 series — its delta of 0.00% is a "no data yet"
+        # signal, not a real measurement. We flag this so the table
+        # can mark the row and the page can surface a banner.
+        unique_values = len({round(v, 4) for v in vals})
         ranking_data.append(
             {
                 "name": s["name"],
                 "current": now,
                 "delta_pct": delta_pct,
                 "color": s.get("color", "#94A0B8"),
+                "n_distinct_values": unique_values,
+                "has_history": unique_values >= 2,
             }
         )
     ranking_data.sort(key=lambda x: x["delta_pct"], reverse=True)
+
+    # Surface an explanatory banner when most portfolios lack ≥2
+    # distinct NAV points. Without this, the operator misreads the
+    # flat 0.00% column as "all strategies stalled" instead of
+    # "comparator needs another trading day".
+    n_no_history = sum(1 for r in ranking_data if not r["has_history"])
+    if n_no_history and n_no_history >= len(ranking_data) // 2:
+        st.info(
+            f"{n_no_history} de {len(ranking_data)} carteras muestran "
+            "+0.00 % porque sólo disponen de 1 snapshot dated todavía. "
+            "La columna **Delta desde T0** se activa cuando cada cartera "
+            "tiene ≥2 días de histórico — el cron diario va creando un "
+            "snapshot por jornada bursátil. Se espera plena cobertura "
+            "tras la próxima sesión EOD."
+        )
 
     rows_html = ""
     for i, item in enumerate(ranking_data, 1):
@@ -159,7 +182,7 @@ if comp:
     )
     src_color = "#3B82F6" if src == "llm" else "#94A0B8"
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card" style="border-left: 3px solid #3B82F6;">
             <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
                 <span class="status-badge" style="background:{src_color}1A; color:{src_color}; border:1px solid {src_color}40;">{src_badge}</span>
@@ -172,7 +195,7 @@ if comp:
                 <p style="margin:4px 0 0 0; color:#1E3A5F; font-weight:500; font-size:0.9375rem;">{comp.get('action', '—')}</p>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 else:
@@ -183,7 +206,7 @@ else:
 # ----------------------------------------------------------------------
 st.markdown("<h2>Performance Attribution</h2>", unsafe_allow_html=True)
 st.markdown(
-    """
+    flat_html("""
     <div class="institutional-card" style="background:#131825;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
             <span class="status-badge" style="background:#94A0B81A; color:#94A0B8; border:1px solid #94A0B840;">PENDIENTE</span>
@@ -199,7 +222,7 @@ st.markdown(
         Disponibilidad estimada: ~2026-06-12 (30 días desde T0 = 2026-05-11).
         </p>
     </div>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -329,7 +352,7 @@ if selected:
         delta_color = "#94A0B8"
 
     st.markdown(
-        f"""
+        flat_html(f"""
         <div class="institutional-card">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
                 <h3 style="margin:0; color:#E8ECF4; font-size:1.125rem; font-weight:600;">{info['label']}</h3>
@@ -341,7 +364,7 @@ if selected:
                 <p style="margin:6px 0 0 0; color:#94A0B8; font-size:0.9375rem; line-height:1.5;">{info['why_diff']}</p>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 

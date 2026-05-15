@@ -24,7 +24,7 @@ from llm_chat import (  # noqa: E402
     is_chat_available,
     load_env_for_chat,
 )
-from styles import status_badge  # noqa: E402
+from styles import flat_html, status_badge  # noqa: E402
 
 ACTION_LABELS = {
     "BUY": "Comprar",
@@ -72,7 +72,7 @@ def render_recommendations(
             source_badge = status_badge("LLM", "blue")
 
         st.markdown(
-            f"""
+            flat_html(f"""
             <div class="institutional-card">
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
                     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -91,7 +91,7 @@ def render_recommendations(
                     <p style="margin:4px 0 0 0; color:#E8ECF4; font-size:0.9375rem;">{rec['action']}</p>
                 </div>
             </div>
-            """,
+            """),
             unsafe_allow_html=True,
         )
 
@@ -163,12 +163,12 @@ def _render_chat_panel(
         answer = st.session_state.get(f"chat_answer_{rec_id}")
         if answer:
             st.markdown(
-                f"""
+                flat_html(f"""
                 <div class="institutional-card" style="background:#F0F9FF; border-left: 3px solid #3B82F6; margin-top:12px;">
                     <span style="font-size:0.75rem; color:#3B82F6; font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Respuesta del cerebro</span>
                     <p style="margin:8px 0 0 0; color:#E8ECF4; line-height:1.6; font-size:0.9375rem; white-space:pre-wrap;">{answer}</p>
                 </div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )
 
