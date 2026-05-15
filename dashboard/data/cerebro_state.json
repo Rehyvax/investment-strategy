@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-15T08:40:47.002958Z",
-  "next_evaluation": "2026-05-16T08:40:34.379024Z",
+  "generated_at": "2026-05-15T13:24:46.157410Z",
+  "next_evaluation": "2026-05-16T13:24:30.572848Z",
   "as_of_date": "2026-05-15",
   "market_state": {
     "regime": "neutral",
     "regime_color": "yellow",
-    "explanation": "El mercado presenta una volatilidad contenida dentro de rangos neutrales, pero el flujo de capital rotando hacia tecnología y alejándose de defensivos indica un apetito por riesgo selectivo, no una convicción amplia de compra. Para esta cartera, el problema no es el mercado sino la estructura: sin liquidez disponible, 19 posiciones activas y estatus en rojo, no hay margen de maniobra ante cualquier corrección inesperada, por moderada que sea. La acción concreta es esta: antes de cualquier decisión de mercado, liberar capital cerrando la posición con peor relación riesgo-retorno dentro de la cartera es la prioridad inmediata, no porque el mercado lo exija hoy, sino porque operar sin caja en un portfolio deteriorado es asumir riesgo operativo innecesario.",
+    "explanation": "El mercado se encuentra en una fase de apetito selectivo por riesgo: el VIX en zona neutral descarta pánico pero tampoco invita a asumir exposición agresiva, y el flujo hacia tecnología frente a defensivos confirma que el capital institucional sigue buscando crecimiento con discriminación sectorial, no rotación defensiva. El problema de esta cartera no es el entorno externo, es interno: cero liquidez con 19 posiciones abiertas y estatus en rojo es una configuración frágil que no tiene margen de reacción ante cualquier corrección no anticipada, por moderada que sea. La correlación negativa bonos-renta variable en treinta días añade una capa adicional de riesgo, ya que elimina el amortiguador natural que normalmente protege carteras diversificadas en momentos de tensión. La acción concreta es una sola: liquidar la posición con peor comportamiento relativo para generar cash mínimo operativo, no porque el mercado lo exija hoy, sino porque operar sin colchón de liquidez con health en rojo es asumir un riesgo operacional que ningún entorno de mercado justifica.",
     "money_flow": "Capital favorece tecnología sobre defensivos (ratio XLK/XLU elevado).",
     "fear_level": "moderate",
     "vix": 18.170000076293945,
@@ -195,7 +195,7 @@
           100.0,
           100.0,
           100.0,
-          100.0
+          97.0
         ],
         "color": "#F97316",
         "default_visible": true
@@ -209,7 +209,7 @@
       "asset": "MELI",
       "priority": "high",
       "headline": "MELI: falsifier en marcha, vigilar gate",
-      "narrative": "La posición en MELI representa un 4,38% del NAV a EUR 2.130, un tamaño razonable para un activo con el perfil de riesgo que presenta hoy: la tesis carece de convicción definida y los próximos catalizadores relevantes —el 10-Q de Q1 2026 y la reunión del BCB en junio— no aportarán claridad antes de mediados de mayo. En ausencia de falsifiers activos el deterioro no es inmediato, pero la incertidumbre sobre el entorno de tipos en Brasil y la dinámica de márgenes de Mercado Pago justifican prudencia antes de ampliar exposición. La acción correcta es mantener la posición en su tamaño actual sin añadir capital, y revisar la tesis con los datos del 10-Q en mano antes de tomar cualquier decisión de incremento o reducción.",
+      "narrative": "La posición en MELI representa un 4,38% del NAV en un momento de convicción moderada: la tesis carece aún de catalizadores confirmados, con los próximos hitos relevantes concentrados en el filing del Q1 2026 y la reunión del BCB en junio, ambos con capacidad para revisar el escenario en cualquier dirección. No hay falsificadores activos que exijan salida, pero tampoco señales que justifiquen ampliar exposición antes de tener mayor claridad sobre el ciclo de tipos en Brasil y la ejecución operativa trimestral. La acción correcta en este contexto es mantener la posición tal como está, sin añadir ni recortar, preservando optionalidad hasta que uno de esos catalizadores aporte información suficiente para actualizar la convicción. Revisa la posición tras la publicación del 10-Q el 15 de mayo antes de tomar cualquier decisión de sizing.",
       "action": "Mantener posición y revisar tras el próximo gate.",
       "color": "yellow",
       "_narrative_source": "llm"
@@ -220,15 +220,15 @@
       "asset": "MSFT",
       "priority": "medium",
       "headline": "MSFT: mantener, sin disparadores activos",
-      "narrative": "La posición en Microsoft representa una exposición razonable dentro de cartera, aunque la tesis subyacente se mantiene en modo de vigilancia con convicción moderada, sin catalizadores inmediatos que justifiquen ampliarla. El próximo evento material relevante es el cierre del ejercicio fiscal en julio de 2026, lo que implica un horizonte de espera prolongado antes de obtener confirmación o refutación de la tesis. En ausencia de falsificadores activos y con el peso actual del 8,56% del NAV dentro de rangos manejables, sostener la posición sin añadir ni reducir es la decisión más disciplinada disponible hoy. Mantén las EUR 4.167 actuales sin modificación hasta que los resultados del Q4 FY2026 aporten evidencia que justifique un ajuste en cualquier dirección.",
+      "narrative": "La posición en MSFT representa un peso significativo en cartera —8,56% NAV— con una tesis que permanece en modo *watch* y confianza moderada, lo que indica que el caso de inversión no ha madurado lo suficiente para justificar una ampliación deliberada. Los próximos catalizadores relevantes —los resultados del Q4 FY2026 en julio y la conferencia Ignite en noviembre— son los eventos que deberían clarificar si la trayectoria de monetización de IA empresarial justifica una revisión al alza de la convicción. Dado que no hay falsificadores activos ni señales de deterioro estructural, no existe urgencia de reducir, pero tampoco argumento sólido para aumentar exposición en este momento. Mantén la posición actual sin variación hasta que alguno de esos catalizadores aporte evidencia que permita elevar o descartar la tesis con mayor claridad.",
       "action": "Mantener posición y revisar tras el próximo gate.",
       "color": "yellow",
       "_narrative_source": "llm"
     }
   ],
   "comparative_analysis": {
-    "headline": "**Cartera real alineada con el comparador; sin señales de alarma.**",
-    "narrative": "La cartera real acumula una variación de –0,07% desde T0, frente al +0,00% del robo-advisor, lo que arroja una diferencia de tan solo 7 puntos básicos: un resultado técnicamente neutro. La divergencia no obedece a ninguna decisión estructural identificable, sino a diferencias menores en timing de valoración o composición de activos subyacentes. Con una brecha inferior a 50 puntos básicos y en un horizonte temporal corto, no existe base estadística para interpretar este diferencial como señal de desalineamiento. La cartera shadow, en cambio, sí muestra una pérdida de –1,43% que merece seguimiento separado, aunque no afecta al análisis de la cartera real. No toques nada.",
+    "headline": "**Cartera real alineada con el comparador, sin alarmas.**",
+    "narrative": "La cartera real acumula una caída de apenas 0,07 puntos porcentuales desde el inicio, prácticamente idéntica al comportamiento del robo-advisor de referencia. La diferencia de 0,07 puntos porcentuales respecto al comparador no refleja ninguna divergencia estructural; ambas carteras se mueven dentro del mismo margen de variación normal. Lo que sí merece atención es la cartera shadow, que acumula una desviación de 1,43 puntos porcentuales respecto al benchmark pasivo, lo que sugiere que las decisiones activas simuladas en ese modelo están generando fricción real frente al índice. Con la información disponible y el horizonte temporal en una fase inicial, la brecha de 0,07 puntos porcentuales entra dentro del umbral de ruido estadístico sin ninguna ambigüedad. No toques nada.",
     "comparator_today": "robo_advisor",
     "comparator_reason": "Robo-advisor replica un Indexa agresivo con 0.40% AuM fee; mide si tu skill bate el coste del asesor.",
     "action": "No cambies nada hoy. Diferencia es ruido en horizonte corto.",
@@ -2066,7 +2066,7 @@
       "forward_pe": 22.655397,
       "pb_ratio": 28.831228,
       "ps_ratio": 12.425308,
-      "peg_ratio": 1.34,
+      "peg_ratio": 1.35,
       "gross_margin": 0.82832,
       "operating_margin": 0.49386,
       "profit_margin": 0.34986,
@@ -2083,7 +2083,7 @@
       "industry": "Drug Manufacturers - General",
       "market_cap": 897716060160,
       "country": "United States",
-      "target_mean_price": 1209.138,
+      "target_mean_price": 1210.0,
       "recommendation_key": "buy",
       "number_of_analyst_opinions": 29,
       "flags": [
@@ -2097,7 +2097,7 @@
       "forward_pe": 11.218918,
       "pb_ratio": 2.6323397,
       "ps_ratio": 3.3013716,
-      "peg_ratio": 0.93,
+      "peg_ratio": 0.91,
       "gross_margin": 0.77676004,
       "operating_margin": 0.19239001,
       "profit_margin": 0.17958,
@@ -2114,9 +2114,9 @@
       "industry": "Software - Application",
       "market_cap": 137089449984,
       "country": "United States",
-      "target_mean_price": 268.2532,
+      "target_mean_price": 267.31577,
       "recommendation_key": "buy",
-      "number_of_analyst_opinions": 53,
+      "number_of_analyst_opinions": 52,
       "flags": [
         "liquidity_concern"
       ]
@@ -2128,7 +2128,7 @@
       "forward_pe": 17.09033,
       "pb_ratio": 6.441107,
       "ps_ratio": 7.302825,
-      "peg_ratio": 0.88,
+      "peg_ratio": 0.89,
       "gross_margin": 0.81941,
       "operating_margin": 0.40617,
       "profit_margin": 0.32837,
@@ -2155,7 +2155,7 @@
     "MSFT": {
       "ticker": "MSFT",
       "as_of_date": "2026-05-15",
-      "pe_ratio": 24.15516,
+      "pe_ratio": 24.385347,
       "forward_pe": 21.15421,
       "pb_ratio": 7.340481,
       "ps_ratio": 9.556023,
@@ -2344,7 +2344,7 @@
       "ticker": "QXO",
       "as_of_date": "2026-05-15",
       "pe_ratio": null,
-      "forward_pe": 23.620447,
+      "forward_pe": 23.639029,
       "pb_ratio": 1.3591703,
       "ps_ratio": 1.4767877,
       "peg_ratio": 2.56,
@@ -2379,7 +2379,7 @@
       "forward_pe": 20.736755,
       "pb_ratio": 36.4246,
       "ps_ratio": 26.4416,
-      "peg_ratio": 0.7,
+      "peg_ratio": 0.75,
       "gross_margin": 0.71068,
       "operating_margin": 0.65024,
       "profit_margin": 0.55603004,
@@ -2396,7 +2396,7 @@
       "industry": "Semiconductors",
       "market_cap": 5709746405376,
       "country": "United States",
-      "target_mean_price": 269.9549,
+      "target_mean_price": 272.93738,
       "recommendation_key": "strong_buy",
       "number_of_analyst_opinions": 57,
       "flags": [
@@ -2555,8 +2555,8 @@
       "industry": "Semiconductors",
       "market_cap": 733281124352,
       "country": "United States",
-      "target_mean_price": 451.58334,
-      "recommendation_key": "strong_buy",
+      "target_mean_price": 457.83334,
+      "recommendation_key": "buy",
       "number_of_analyst_opinions": 48,
       "flags": [
         "high_pe",

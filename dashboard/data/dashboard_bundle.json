@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-15T08:41:24.189763Z",
+  "generated_at": "2026-05-15T13:25:25.662378Z",
   "as_of_date": "2026-05-15",
   "theses_assets": [
     {
@@ -351,12 +351,43 @@
   ],
   "claude_autonomous": {
     "snapshot": {
-      "as_of_date": "2026-05-14",
+      "as_of_date": "2026-05-15",
       "portfolio_id": "claude_autonomous",
-      "nav_total_eur": 50000.0,
-      "cash_eur": 50000.0,
+      "nav_total_eur": 48497.96,
+      "cash_eur": -47237.31,
       "alpaca_status": "AccountStatus.ACTIVE",
-      "positions": []
+      "positions": [
+        {
+          "ticker": "AMZN",
+          "shares": 75.0,
+          "cost_basis_per_share_native": 269.332,
+          "current_price_native": 262.69,
+          "current_value_eur": 19701.75,
+          "weight_pct": 40.623873663964424,
+          "unrealized_pl": -498.15,
+          "unrealized_plpc": -2.466
+        },
+        {
+          "ticker": "GOOGL",
+          "shares": 125.0,
+          "cost_basis_per_share_native": 398.86,
+          "current_price_native": 393.69,
+          "current_value_eur": 49211.25,
+          "weight_pct": 101.47076289394441,
+          "unrealized_pl": -646.25,
+          "unrealized_plpc": -1.2959999999999998
+        },
+        {
+          "ticker": "META",
+          "shares": 44.0,
+          "cost_basis_per_share_native": 617.725227,
+          "current_price_native": 609.58,
+          "current_value_eur": 26821.52,
+          "weight_pct": 55.30442929970663,
+          "unrealized_pl": -358.389988,
+          "unrealized_plpc": -1.319
+        }
+      ]
     },
     "decisions": [
       {
@@ -394,6 +425,10 @@
       [
         "2026-05-14",
         50000.0
+      ],
+      [
+        "2026-05-15",
+        48497.96
       ]
     ]
   }
